@@ -24,6 +24,7 @@ export const census = () => {
                 spawner.spawnCreep(role.body, `${role.name}${Game.time.toString()}`, {
                     memory: {
                         role: role.name,
+                        task: "",
                     },
                 });
                 return;
