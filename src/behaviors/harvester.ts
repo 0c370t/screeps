@@ -1,7 +1,6 @@
 import type {BehaviorFunction} from "./types";
 
 /**
- *
  * @returns true if creep did work
  */
 function mine(creep: Creep): boolean {
@@ -47,19 +46,19 @@ function depositAtRoomController(creep: Creep): boolean {
 
 export const harvester: BehaviorFunction = (creep: Creep) => {
     // First try to mine
-    if (creep.store.getFreeCapacity() > 0 || creep.memory.task === "mine") {
+    if (creep.memory.task === "mine" || (creep.memory.task === "" && creep.store.getFreeCapacity() > 0)) {
         // Can collect materials
         creep.memory.task = "mine";
         if (mine(creep)) return;
     }
     // Then try to drop some off
     const spawn = Game.spawns.Spawn1;
-    if (spawn.store.getFreeCapacity() || creep.memory.task === "depositAtSpawn") {
+    if (creep.memory.task === "depositAtSpawn" || (creep.memory.task === "" && spawn.store.getFreeCapacity(RESOURCE_ENERGY))) {
         creep.memory.task = "depositAtSpawn";
         if (depositAtSpawner(creep)) return;
     }
     // Then try to drop it off at the room controller
-    creep.memory.task = "depositAtSpawner";
+    creep.memory.task = "depositAtRoomController";
     depositAtRoomController(creep);
     
 };
