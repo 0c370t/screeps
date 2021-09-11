@@ -7,5 +7,8 @@ export default {
         file: "built.js",
         format: "cjs",
     },
-    plugins: [typescript(), terser()],
+    plugins: [
+        typescript(),
+        // terser(),
+    ],
 };
