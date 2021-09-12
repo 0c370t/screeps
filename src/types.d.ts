@@ -1,8 +1,8 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="screeps" />
 
-import type {AvailableRoles} from "./roles";
-import type {AvailableTasks} from "./tasks";
+import type {AvailableRoles} from "./creeps/roles";
+import type {AvailableTasks} from "./creeps/tasks";
 
 declare global {
     interface CreepMemory {
@@ -10,7 +10,7 @@ declare global {
         task?: AvailableTasks;
         targetSource?: Id<Source>;
         targetConSite?: Id<ConstructionSite>;
-        desintation?: Id<OwnedStructure>;
+        destination?: Id<OwnedStructure>;
     }
     interface RoomMemory {
         sourceAttentions: Record<string, number>;

@@ -1,10 +1,7 @@
-import type {AvailableRoles} from "../roles/index";
-import {roles} from "../roles/index";
-
-const log = (s: string) => { console.log(`CENSUS | ${s}`) };
+import type {AvailableRoles} from "../creeps/roles/index";
+import {roles} from "../creeps/roles/index";
 
 export const census = () => {
-    log("Running census!");
     const creeps = Object.entries(Memory.creeps)
         .reduce<Record<AvailableRoles, CreepMemory[]>>((out, [, creep]: [string, CreepMemory]) => {
         out[creep.role].push(creep);

@@ -4,7 +4,7 @@ import {harvester} from "./harvester";
 export const roles = {
     harvester: {
         name: "harvester" as const,
-        targetPopulation: 6,
+        targetPopulation: 8,
         behavior: harvester,
         bodies: [
             [WORK, WORK, CARRY, CARRY, MOVE, MOVE],
@@ -13,7 +13,7 @@ export const roles = {
     },
     builder: {
         name: "builder" as const,
-        targetPopulation: 3,
+        targetPopulation: 4,
         behavior: builder,
         bodies: [
             [WORK, CARRY, MOVE],

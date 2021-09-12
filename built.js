@@ -46,6 +46,55 @@ var build = function (creep) {
     }
 };
 
+function deposit(creep) {
+    if (!creep.memory.task)
+        creep.memory.task = "deposit";
+    if (!creep.memory.destination) {
+        creep.memory.task = undefined;
+        return WorkStatus.DONE;
+    }
+    var destintation = Game.getObjectById(creep.memory.destination);
+    if (!destintation) {
+        creep.memory.task = undefined;
+        creep.memory.destination = undefined;
+        return WorkStatus.DONE;
+    }
+    switch (creep.transfer(destintation, RESOURCE_ENERGY)) {
+        case ERR_NOT_IN_RANGE:
+            creep.moveTo(destintation);
+            return WorkStatus.WORKING;
+        case ERR_FULL:
+        case ERR_NOT_ENOUGH_ENERGY:
+        case ERR_NOT_ENOUGH_RESOURCES:
+            return WorkStatus.DONE;
+        default: return WorkStatus.WORKING;
+    }
+}
+
+function maintain(creep) {
+    if (!creep.memory.task)
+        creep.memory.task = "maintain";
+    if (!creep.memory.destination) {
+        creep.memory.task = undefined;
+        return WorkStatus.DONE;
+    }
+    var destintation = Game.getObjectById(creep.memory.destination);
+    if (!destintation) {
+        creep.memory.task = undefined;
+        creep.memory.destination = undefined;
+        return WorkStatus.DONE;
+    }
+    switch (creep.repair(destintation)) {
+        case ERR_NOT_IN_RANGE:
+            creep.moveTo(destintation);
+            return WorkStatus.WORKING;
+        case ERR_NOT_ENOUGH_ENERGY:
+        case ERR_NOT_ENOUGH_RESOURCES:
+            return WorkStatus.DONE;
+        default: return WorkStatus.WORKING;
+    }
+}
+
 function getTarget(creep) {
     var roomMem = creep.room.memory;
     // Do not trust memory
@@ -97,111 +146,69 @@ function mine(creep) {
     return WorkStatus.WORKING;
 }
 
+var tasks = {
+    mine: mine,
+    build: build,
+    deposit: deposit,
+    maintain: maintain
+};
+
 var builder = function (creep) {
     if (creep.store.getUsedCapacity() === 0) {
         // TODO: Pull from containers if available first
-        mine(creep);
+        tasks.mine(creep);
     }
-    // TODO: Maintainence
-    build(creep);
-};
-
-function depositAtExtension(creep) {
-    if (creep.memory.task === undefined)
-        creep.memory.task = "depositAtExtension";
-    if (creep.store.getFreeCapacity() === creep.store.getCapacity()) {
-        // Creep has finished task
-        creep.memory.task = undefined;
-        return WorkStatus.DONE;
+    var maintainence = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: function (s) { return s.hits < s.hitsMax / 2; }
+    });
+    if (maintainence) {
+        creep.memory.destination = maintainence.id;
+        tasks.maintain(creep);
     }
-    var closestExtension = creep.memory.desintation
-        ? Game.getObjectById(creep.memory.desintation)
-        : creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-            filter: function (s) { return s.structureType === "extension" && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0; }
-        });
-    if (!closestExtension) {
-        creep.memory.task = undefined;
-        creep.memory.desintation = undefined;
-        return WorkStatus.DONE;
-    }
-    switch (creep.transfer(closestExtension, RESOURCE_ENERGY)) {
-        case ERR_NOT_IN_RANGE:
-            creep.moveTo(closestExtension);
-            return WorkStatus.WORKING;
-        case ERR_FULL:
-            return WorkStatus.DONE;
-        default: return WorkStatus.WORKING;
-    }
-}
-
-function depositAtRoomController(creep) {
-    if (creep.memory.task === undefined)
-        creep.memory.task = "depositAtRoomController";
-    if (creep.store.getFreeCapacity() === creep.store.getCapacity()) {
-        // Creep has completed the task
-        creep.memory.task = undefined;
-        return WorkStatus.DONE;
-    }
-    var controller = creep.room.controller;
-    if (controller) {
-        var attempt = creep.transfer(controller, RESOURCE_ENERGY);
-        if (attempt === ERR_NOT_IN_RANGE)
-            creep.moveTo(controller);
-    }
-    return WorkStatus.WORKING;
-}
-
-function depositAtSpawner(creep) {
-    if (creep.memory.task === undefined)
-        creep.memory.task = "depositAtSpawner";
-    if (creep.store.getFreeCapacity() === creep.store.getCapacity()) {
-        // Creep has finished task
-        creep.memory.task = undefined;
-        return WorkStatus.DONE;
-    }
-    var spawn = Game.spawns.Spawn1;
-    switch (creep.transfer(spawn, RESOURCE_ENERGY)) {
-        case ERR_NOT_IN_RANGE:
-            creep.moveTo(spawn);
-            return WorkStatus.WORKING;
-        case ERR_FULL:
-            return WorkStatus.DONE;
-        default: return WorkStatus.WORKING;
-    }
-}
-
-var tasks = {
-    mine: mine,
-    depositAtRoomController: depositAtRoomController,
-    depositAtSpawner: depositAtSpawner,
-    build: build,
-    depositAtExtension: depositAtExtension
+    tasks.build(creep);
 };
 
 var harvester = function (creep) {
     // First try to mine
     if (creep.store.getFreeCapacity() > 0) {
         // Can collect materials
-        creep.memory.task = "mine";
-        if (tasks.mine(creep))
-            return;
+        tasks.mine(creep);
+        return;
     }
     // Then try to deposit in spawner
     var spawn = Game.spawns.Spawn1;
     if (spawn.store.getFreeCapacity(RESOURCE_ENERGY)) {
-        creep.memory.task = "depositAtSpawner";
-        if (tasks.depositAtSpawner(creep))
-            return;
+        creep.memory.destination = spawn.id;
+        tasks.deposit(creep);
+        return;
     }
-    // Then try to deposit at room controller
-    creep.memory.task = "depositAtRoomController";
-    tasks.depositAtRoomController(creep);
+    var tower = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: function (s) { return s.structureType === "tower"; }
+    });
+    if (tower === null || tower === void 0 ? void 0 : tower.store.getFreeCapacity(RESOURCE_ENERGY)) {
+        creep.memory.destination = tower.id;
+        tasks.deposit(creep);
+        return;
+    }
+    var controller = creep.room.controller;
+    if (controller) {
+        creep.memory.destination = controller.id;
+        tasks.deposit(creep);
+    }
+    var closestExtension = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: function (s) { return s.structureType === "extension" && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0; }
+    });
+    if (closestExtension) {
+        creep.memory.destination = closestExtension.id;
+        tasks.deposit(creep);
+    }
+    creep.say("oopsie");
 };
 
 var roles = {
     harvester: {
         name: "harvester",
-        targetPopulation: 6,
+        targetPopulation: 8,
         behavior: harvester,
         bodies: [
             [WORK, WORK, CARRY, CARRY, MOVE, MOVE],
@@ -210,12 +217,54 @@ var roles = {
     },
     builder: {
         name: "builder",
-        targetPopulation: 3,
+        targetPopulation: 4,
         behavior: builder,
         bodies: [
             [WORK, CARRY, MOVE],
         ]
     }
+};
+
+var creepBehavior = function () {
+    console.log("creeping");
+    for (var _i = 0, _a = Object.values(Game.creeps); _i < _a.length; _i++) {
+        var creep = _a[_i];
+        if (creep.memory.task) {
+            creep.say(creep.memory.task);
+            var status = tasks[creep.memory.task](creep);
+            if (status === WorkStatus.WORKING)
+                continue;
+            creep.memory.task = undefined;
+        }
+        else {
+            creep.say("I'm bored!");
+        }
+        roles[creep.memory.role].behavior(creep);
+    }
+};
+
+var behave = function (tower) {
+    var enemies = tower.room.find(FIND_HOSTILE_CREEPS);
+    if (enemies.length) {
+        tower.attack(enemies[0]);
+        return;
+    }
+    var buildings = tower.room.find(FIND_MY_STRUCTURES, {
+        filter: function (s) { return s.hits < s.hitsMax / 2; }
+    });
+    if (buildings.length) {
+        tower.repair(buildings[0]);
+        return;
+    }
+};
+var towerBehavior = function () {
+    Object.values(Game.rooms).forEach(function (room) {
+        var towers = room.find(FIND_MY_STRUCTURES, {
+            filter: function (s) { return s.structureType === "tower"; }
+        });
+        console.log(towers);
+        towers.forEach(behave);
+    });
 };
 
 /*! *****************************************************************************
@@ -244,9 +293,7 @@ var __assign = function() {
     return __assign.apply(this, arguments);
 };
 
-var log$1 = function (s) { console.log("CENSUS | " + s); };
 var census = function () {
-    log$1("Running census!");
     var creeps = Object.entries(Memory.creeps)
         .reduce(function (out, _a) {
         var creep = _a[1];
@@ -306,6 +353,41 @@ var cleanTombs = function () {
     }
 };
 
+var planRoads = function (room) {
+    var controller = room.controller;
+    var sources = room.find(FIND_SOURCES);
+    var nodes = [];
+    if (controller) {
+        nodes.push(controller.pos);
+    }
+    sources.forEach(function (s) { return nodes.push(s.pos); });
+    var included_structures = [
+        "container",
+        "extension",
+        "spawn",
+    ];
+    var structures = room.find(FIND_MY_STRUCTURES, {
+        filter: function (s) { return included_structures.includes(s.structureType); }
+    });
+    console.log(structures);
+    structures.forEach(function (s) { return nodes.push(s.pos); });
+    var roadPositions = new Set();
+    nodes.forEach(function (n1, i) {
+        for (var j = i; j < nodes.length; j++) {
+            var path = PathFinder.search(n1, { pos: nodes[j], range: 1 }).path;
+            path.forEach(function (p) { return roadPositions.add(p); });
+        }
+    });
+    roadPositions.forEach(function (p) { return p.createConstructionSite(STRUCTURE_ROAD); });
+};
+var roomPlanning = function () {
+    console.log("Executing Room Planning");
+    for (var _i = 0, _a = Object.values(Game.rooms); _i < _a.length; _i++) {
+        var room = _a[_i];
+        planRoads(room);
+    }
+};
+
 var loop = function () {
     if (Game.time % 10 === 0) {
         census();
@@ -316,16 +398,11 @@ var loop = function () {
     if (Game.time % 5 === 0) {
         cleanTombs();
     }
-    for (var _i = 0, _a = Object.values(Game.creeps); _i < _a.length; _i++) {
-        var creep = _a[_i];
-        if (creep.memory.task) {
-            var status = tasks[creep.memory.task](creep);
-            if (status === WorkStatus.WORKING)
-                continue;
-            creep.memory.task = undefined;
-        }
-        roles[creep.memory.role].behavior(creep);
+    if (Game.time % 1000 === 0) {
+        roomPlanning();
     }
+    creepBehavior();
+    towerBehavior();
 };
 
 exports.loop = loop;

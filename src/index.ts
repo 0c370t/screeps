@@ -1,15 +1,15 @@
-import {roles} from "./roles";
-import {tasks} from "./tasks";
-import {instincts} from "./tasks/instincts";
-import {WorkStatus} from "./tasks/types";
+import {creepBehavior} from "./creeps";
+import {towerBehavior} from "./towers";
 import {census} from "./utils/census";
 import {cleanMemory} from "./utils/clean_memory";
 import {cleanTombs} from "./utils/clean_tombs";
+import {roomPlanning} from "./utils/room_planning";
 
 export const loop = () => {
     if (Game.time % 10 === 0) {
         census();
     }
+
     if (Game.time % 50 === 0) {
         cleanMemory();
     }
@@ -18,18 +18,10 @@ export const loop = () => {
         cleanTombs();
     }
 
-    for (const creep of Object.values(Game.creeps)) {
-        
-        if (instincts(creep)) {
-            continue;
-        }
-        if (creep.memory.task) {
-            const status = tasks[creep.memory.task](creep);
-            
-            if (status === WorkStatus.WORKING) continue;
-            creep.memory.task = undefined;
-        }
-        
-        roles[creep.memory.role].behavior(creep);
+    if (Game.time % 1000 === 0) {
+        roomPlanning();
     }
+
+    creepBehavior();
+    towerBehavior();
 };
