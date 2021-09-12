@@ -4,7 +4,6 @@ import {instincts} from "./tasks/instincts";
 import {WorkStatus} from "./tasks/types";
 
 export const creepBehavior = () => {
-    console.log("creeping")
     for (const creep of Object.values(Game.creeps)) {
         if (instincts(creep)) {
             console.log("Instincts bby");

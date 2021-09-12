@@ -18,6 +18,30 @@ export const harvester: RoleBehavior = (creep: Creep) => {
         tasks.deposit(creep);
         return;
     }
+
+    const controller = creep.room.controller;
+    if (controller) {
+        if (controller.ticksToDowngrade < 15000) {
+            creep.memory.destination = controller.id;
+            tasks.deposit(creep);
+            return;
+        }
+    }
+
+    const validContainers = [
+        "extension",
+        "container",
+    ];
+    const closestContainer = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: s => validContainers.includes(s.structureType) && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
+    });
+    if (closestContainer) {
+        creep.memory.destination = closestContainer.id;
+        tasks.deposit(creep);
+        return;
+    }
+
+
     const tower: StructureTower | null = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
         filter: s => s.structureType === "tower",
     });
@@ -27,17 +51,10 @@ export const harvester: RoleBehavior = (creep: Creep) => {
         return;
     }
 
-    const controller = creep.room.controller;
     if (controller) {
         creep.memory.destination = controller.id;
         tasks.deposit(creep);
-    }
-    const closestExtension = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-        filter: s => s.structureType === "extension" && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0,
-    });
-    if (closestExtension) {
-        creep.memory.destination = closestExtension.id;
-        tasks.deposit(creep);
+        return;
     }
 
     creep.say("oopsie");

@@ -182,6 +182,26 @@ var harvester = function (creep) {
         tasks.deposit(creep);
         return;
     }
+    var controller = creep.room.controller;
+    if (controller) {
+        if (controller.ticksToDowngrade < 15000) {
+            creep.memory.destination = controller.id;
+            tasks.deposit(creep);
+            return;
+        }
+    }
+    var validContainers = [
+        "extension",
+        "container",
+    ];
+    var closestContainer = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
+        filter: function (s) { return validContainers.includes(s.structureType) && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0; }
+    });
+    if (closestContainer) {
+        creep.memory.destination = closestContainer.id;
+        tasks.deposit(creep);
+        return;
+    }
     var tower = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
         filter: function (s) { return s.structureType === "tower"; }
     });
@@ -190,17 +210,10 @@ var harvester = function (creep) {
         tasks.deposit(creep);
         return;
     }
-    var controller = creep.room.controller;
     if (controller) {
         creep.memory.destination = controller.id;
         tasks.deposit(creep);
-    }
-    var closestExtension = creep.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-        filter: function (s) { return s.structureType === "extension" && s.store.getFreeCapacity(RESOURCE_ENERGY) > 0; }
-    });
-    if (closestExtension) {
-        creep.memory.destination = closestExtension.id;
-        tasks.deposit(creep);
+        return;
     }
     creep.say("oopsie");
 };
@@ -211,22 +224,24 @@ var roles = {
         targetPopulation: 8,
         behavior: harvester,
         bodies: [
+            [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
             [WORK, WORK, CARRY, CARRY, MOVE, MOVE],
-            [WORK, CARRY, MOVE],
+            [WORK, CARRY, MOVE], // 0
         ]
     },
     builder: {
         name: "builder",
-        targetPopulation: 4,
+        targetPopulation: 6,
         behavior: builder,
         bodies: [
+            [WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE],
+            [WORK, CARRY, CARRY, MOVE, MOVE],
             [WORK, CARRY, MOVE],
         ]
     }
 };
 
 var creepBehavior = function () {
-    console.log("creeping");
     for (var _i = 0, _a = Object.values(Game.creeps); _i < _a.length; _i++) {
         var creep = _a[_i];
         if (creep.memory.task) {
@@ -243,15 +258,17 @@ var creepBehavior = function () {
     }
 };
 
+var findMaintainableBuildings = function (room) { return room.find(FIND_STRUCTURES, {
+    filter: function (s) { return (s.hits < s.hitsMax / 2 && s.structureType !== "constructedWall") || s.hits < 15000; }
+}).sort(function (a, b) { return (a.hits / a.hitsMax) - (b.hits / b.hitsMax); }); };
+
 var behave = function (tower) {
     var enemies = tower.room.find(FIND_HOSTILE_CREEPS);
     if (enemies.length) {
         tower.attack(enemies[0]);
         return;
     }
-    var buildings = tower.room.find(FIND_MY_STRUCTURES, {
-        filter: function (s) { return s.hits < s.hitsMax / 2; }
-    });
+    var buildings = findMaintainableBuildings(tower.room);
     if (buildings.length) {
         tower.repair(buildings[0]);
         return;
@@ -262,7 +279,6 @@ var towerBehavior = function () {
         var towers = room.find(FIND_MY_STRUCTURES, {
             filter: function (s) { return s.structureType === "tower"; }
         });
-        console.log(towers);
         towers.forEach(behave);
     });
 };
@@ -302,32 +318,42 @@ var census = function () {
     }, { "harvester": [], "builder": [] });
     // TODO: Make this more intelligent
     var spawner = Game.spawns.Spawn1;
+    var _loop_1 = function (role) {
+        var targetBody = void 0;
+        if (creeps[role.name].length === 0) {
+            targetBody = role.bodies[role.bodies.length - 1];
+            if (spawner.spawnCreep(targetBody, "" + role.name + Game.time.toString(), { dryRun: true }) !== OK)
+                return "continue";
+        }
+        else {
+            var ratio_1 = creeps[role.name].length / role.targetPopulation;
+            // must be at least 1/2 pop to make largest body, 1/4 pop to make 2nd largest body, etc
+            // eslint-disable-next-line @typescript-eslint/no-loop-func
+            targetBody = role.bodies.find(function (v, i) { return ratio_1 > 1 / Math.pow(2, i); });
+            if (!targetBody || spawner.spawnCreep(targetBody, "" + role.name + Game.time.toString(), { dryRun: true }) !== OK)
+                return "continue";
+        }
+        var memory = {
+            role: role.name
+        };
+        var status = spawner.spawnCreep(targetBody, "" + role.name + Game.time.toString(), {
+            memory: __assign({}, memory)
+        });
+        if (status === OK) {
+            console.log("Spawned a " + role.name + " with " + targetBody + ", and memory of " + JSON.stringify(memory));
+            return { value: void 0 };
+        }
+        console.log("Failed to spawn! " + status);
+    };
     for (var _i = 0, _a = Object.values(roles); _i < _a.length; _i++) {
         var role = _a[_i];
-        if (creeps[role.name].length < role.targetPopulation) {
-            // Attempt to Spawn Creep
-            for (var _b = 0, _c = role.bodies; _b < _c.length; _b++) {
-                var body = _c[_b];
-                if (spawner.spawnCreep(body, "" + role.name + Game.time.toString(), { dryRun: true }) === OK) {
-                    var memory = {
-                        role: role.name
-                    };
-                    spawner.spawnCreep(body, "" + role.name + Game.time.toString(), {
-                        memory: __assign({}, memory)
-                    });
-                    console.log("Spawned a " + role.name + " with " + body + ", and memory of " + JSON.stringify(memory));
-                    return;
-                }
-            }
-            // We won't be able to spawn any of this role, keep moving
-            continue;
-        }
+        var state_1 = _loop_1(role);
+        if (typeof state_1 === "object")
+            return state_1.value;
     }
 };
 
-var log = function (s) { console.log("MEMCLEAN | " + s); };
 var cleanMemory = function () {
-    log("Cleaning Memory");
     var creepNames = Object.keys(Game.creeps);
     var toRemove = [];
     Object.keys(Memory.creeps).forEach(function (creepName) {
@@ -335,7 +361,6 @@ var cleanMemory = function () {
             toRemove.push(creepName);
         }
     });
-    log("Deleting stale memory entries: " + JSON.stringify(toRemove));
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     toRemove.forEach(function (name) { return delete Memory.creeps[name]; });
 };
@@ -369,7 +394,6 @@ var planRoads = function (room) {
     var structures = room.find(FIND_MY_STRUCTURES, {
         filter: function (s) { return included_structures.includes(s.structureType); }
     });
-    console.log(structures);
     structures.forEach(function (s) { return nodes.push(s.pos); });
     var roadPositions = new Set();
     nodes.forEach(function (n1, i) {

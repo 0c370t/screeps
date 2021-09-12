@@ -14,7 +14,6 @@ const planRoads = (room: Room) => {
     const structures = room.find(FIND_MY_STRUCTURES, {
         filter: s => included_structures.includes(s.structureType),
     });
-    console.log(structures);
     structures.forEach(s => nodes.push(s.pos));
 
     const roadPositions: Set<RoomPosition> = new Set<RoomPosition>();
