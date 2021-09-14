@@ -3,14 +3,15 @@ import {StepStatus} from ".";
 
 export const mine: StepFunction<Source> = (creep, step): StepStatus => {
     const target: Source | null = Game.getObjectById(step.target);
-    if (target === null || !Object.keys(target).includes("energy")) {
+
+    if (target === null || !target.energy) {
         console.log("Invalid Target!");
         // Abort this directive
         return StepStatus.ERROR;
     }
     if (creep.store.getFreeCapacity() === 0) {
         // Creep has filled up
-        creep.say("👌");
+        creep.say("⛏️✅");
         return StepStatus.COMPLETE;
     }
     const status = creep.harvest(target);

@@ -3,14 +3,15 @@ import {StepStatus} from ".";
 
 export const collect: StepFunction<Structure> = (creep: Creep, step): StepStatus => {
     const target: Structure | null = Game.getObjectById(step.target);
-    
-    if (target === null || !Object.keys(target).includes("store")) {
+
+    // @ts-expect-error Don't trust getObjectById
+    if (target === null || !target.store) {
         console.log("Invalid Target!");
         return StepStatus.ERROR;
     }
 
     if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-        creep.say("👌");
+        creep.say("🛻✅");
         return StepStatus.COMPLETE;
     }
 

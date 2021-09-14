@@ -23,7 +23,7 @@ export const census = (room: Room) => {
     = creeps.reduce<Record<Role, number>>((out, creep) => {
         out[creep.memory.role] += 1;
         return out;
-    }, {"harvester": 0});
+    }, {"harvester": 0, "builder": 0});
     
     // Use find instead of forEach to let us bail out when we need to
     Object.entries(currentPopulation).find(([roleName, population]: [Role, number]) => {

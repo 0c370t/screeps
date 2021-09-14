@@ -1,3 +1,4 @@
+import {builder} from "./builder";
 import {harvester} from "./harvester";
 
 export interface RoleDeclaration {
@@ -7,6 +8,7 @@ export interface RoleDeclaration {
 
 export const roles = {
     harvester,
+    builder,
 };
 
 export type Role = keyof typeof roles;

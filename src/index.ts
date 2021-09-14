@@ -1,4 +1,4 @@
-// import "screeps-regenerator-runtime/runtime";
+import "screeps-regenerator-runtime/runtime";
 
 import type {RoutineName} from "./routines";
 import {routines} from "./routines";
@@ -23,6 +23,7 @@ function executeThread(title: RoutineName) {
 }
 
 export function loop() {
-    if (!Memory.threads) Memory.threads = {"room_management": {} };
+    if (!Memory.threads) Memory.threads = {"room_management": {}, "creep_behaviors": {} };
     executeThread("room_management");
+    executeThread("creep_behaviors");
 }

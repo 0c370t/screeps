@@ -4,13 +4,13 @@ import {StepStatus} from ".";
 export const build: StepFunction<ConstructionSite> = (creep: Creep, step): StepStatus => {
     const target: ConstructionSite | null = Game.getObjectById(step.target);
     
-    if (target === null || !Object.keys(target).includes("progress")) {
+    if (target === null || !target.progressTotal) {
         console.log("Invalid Target!");
         return StepStatus.ERROR;
     }
 
     if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-        creep.say("👌");
+        creep.say("🔨✅");
         return StepStatus.COMPLETE;
     }
 
