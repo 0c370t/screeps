@@ -1,18 +1,25 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="screeps" />
 
-import type {AvailableRoles} from "./creeps/roles";
-import type {AvailableTasks} from "./creeps/tasks";
+import type {RoutineName} from "./routines";
+import { Role } from "./routines/creep_behaviors/roles";
+
+export {};
 
 declare global {
+    
     interface CreepMemory {
-        role: AvailableRoles;
-        task?: AvailableTasks;
-        targetSource?: Id<Source>;
-        targetConSite?: Id<ConstructionSite>;
-        destination?: Id<OwnedStructure>;
+        role: Role;
     }
     interface RoomMemory {
-        sourceAttentions: Record<string, number>;
     }
+    interface Memory {
+        threads?: Record<RoutineName, any>;
+    }
+    interface RegeneratorRuntime {
+        deserializeGenerator: CallableFunction;
+        serializeGenerator: CallableFunction;
+    }
+    const regeneratorRuntime: RegeneratorRuntime;
 }
+

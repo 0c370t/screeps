@@ -1,8 +1,12 @@
 {
   "compilerOptions": {
-    "module": "ES2015",
-    "lib": ["ESNEXT"],
+    "module": "ES2020",
+    "target": "ES6",
+    "lib": ["esnext", "ESNext.AsyncIterable", "ES2015.Generator", "ES2018.AsyncGenerator"],
     "strictNullChecks": true,
     "moduleResolution": "node",
-  }
+    "esModuleInterop": true,
+    "noEmitHelpers": true
+  },
+  "exclude": ["old/**/*.ts"],
 }

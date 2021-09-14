@@ -1,27 +1,28 @@
-import {creepBehavior} from "./creeps";
-import {towerBehavior} from "./towers";
-import {census} from "./utils/census";
-import {cleanMemory} from "./utils/clean_memory";
-import {cleanTombs} from "./utils/clean_tombs";
-import {roomPlanning} from "./utils/room_planning";
+// import "screeps-regenerator-runtime/runtime";
 
-export const loop = () => {
-    if (Game.time % 10 === 0) {
-        census();
+import type {RoutineName} from "./routines";
+import {routines} from "./routines";
+
+
+function executeThread(title: RoutineName) {
+    let thread;
+    if (Memory.threads![title]) {
+        try {
+            thread = regeneratorRuntime.deserializeGenerator(Memory.threads![title]);
+        } finally {
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete Memory.threads![title];
+        }
+    } else {
+        thread = routines[title]();
     }
-
-    if (Game.time % 50 === 0) {
-        cleanMemory();
+    const result = thread.next();
+    if (!result.done) {
+        Memory.threads![title] = regeneratorRuntime.serializeGenerator(thread);
     }
+}
 
-    if (Game.time % 5 === 0) {
-        cleanTombs();
-    }
-
-    if (Game.time % 1000 === 0) {
-        roomPlanning();
-    }
-
-    creepBehavior();
-    towerBehavior();
-};
+export function loop() {
+    if (!Memory.threads) Memory.threads = {"room_management": {} };
+    executeThread("room_management");
+}
