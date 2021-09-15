@@ -802,7 +802,7 @@ var _ref$1 = function () {
       if (!memo[r.name]) {
         var allDirectives = Object.values((_a = r.memory.availableDirectives) !== null && _a !== void 0 ? _a : {});
         memo[r.name] = allDirectives.sort(function (a, b) {
-          return a.priority - b.priority;
+          return b.priority - a.priority;
         });
       }
 
@@ -813,7 +813,7 @@ var _ref$1 = function () {
 
       var allDirectives = Object.values((_a = r.memory.availableDirectives) !== null && _a !== void 0 ? _a : {});
       memo[r.name] = allDirectives.sort(function (a, b) {
-        return a.priority - b.priority;
+        return b.priority - a.priority;
       });
     }
   };
@@ -1395,7 +1395,18 @@ var directiveGeneration = function directiveGeneration(room) {
   var spawns = room.find(FIND_MY_SPAWNS);
   spawns.forEach(function (s) {
     if (s.store.getFreeCapacity(RESOURCE_ENERGY)) {
-      var directive = createCollectEnergyDirective(findBestSource(room), s.id, 2);
+      var directive = {
+        roles: ["harvester"],
+        steps: [{
+          type: "mine",
+          target: findBestSource(room)
+        }, {
+          type: "deposit",
+          target: s.id
+        }],
+        available: 2,
+        priority: s.store.getUsedCapacity(RESOURCE_ENERGY) < s.store.getCapacity(RESOURCE_ENERGY) / 2 ? Priority.HIGH : Priority.NORMAL
+      };
       addDirectiveToRoom(room, directive);
     }
   }); // Attempt to fill containers
@@ -1448,6 +1459,7 @@ var directiveGeneration = function directiveGeneration(room) {
   }; // Attempt to build structures
 
   var sites = room.find(FIND_MY_CONSTRUCTION_SITES);
+  var lowPrioritySites = ["road", "constructedWall", "rampart"];
   sites.forEach(function (s) {
     if (s.progress < s.progressTotal) {
       var directive = {
@@ -1457,7 +1469,7 @@ var directiveGeneration = function directiveGeneration(room) {
           target: s.id
         }],
         available: 2,
-        priority: Priority.HIGH
+        priority: lowPrioritySites.includes(s.structureType) ? Priority.LOW : Priority.HIGH
       };
       addDirectiveToRoom(room, directive);
     }

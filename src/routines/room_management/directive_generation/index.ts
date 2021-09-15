@@ -58,7 +58,21 @@ export const directiveGeneration = (room: Room) => {
     const spawns = room.find(FIND_MY_SPAWNS);
     spawns.forEach(s => {
         if (s.store.getFreeCapacity(RESOURCE_ENERGY)) {
-            const directive = createCollectEnergyDirective(findBestSource(room), s.id, 2);
+            const directive: AvailableDirective = {
+                roles: ["harvester"],
+                steps: [
+                    {
+                        type: "mine",
+                        target: findBestSource(room),
+                    },
+                    {
+                        type: "deposit",
+                        target: s.id,
+                    },
+                ],
+                available: 2,
+                priority: s.store.getUsedCapacity(RESOURCE_ENERGY) < s.store.getCapacity(RESOURCE_ENERGY) / 2 ? Priority.HIGH : Priority.NORMAL,
+            };
             addDirectiveToRoom(room, directive);
         }
     });
@@ -113,6 +127,7 @@ export const directiveGeneration = (room: Room) => {
 
     // Attempt to build structures
     const sites = room.find(FIND_MY_CONSTRUCTION_SITES);
+    const lowPrioritySites: StructureConstant[] = ["road", "constructedWall", "rampart"];
     sites.forEach(s => {
         if (s.progress < s.progressTotal) {
             const directive: AvailableDirective = {
@@ -122,7 +137,7 @@ export const directiveGeneration = (room: Room) => {
                     target: s.id,
                 } ],
                 available: 2,
-                priority: Priority.HIGH,
+                priority: lowPrioritySites.includes(s.structureType) ? Priority.LOW : Priority.HIGH,
             };
             addDirectiveToRoom(room, directive);
         }

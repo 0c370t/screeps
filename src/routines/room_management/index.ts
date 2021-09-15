@@ -1,6 +1,6 @@
 import {census} from "./census";
 import {directiveGeneration} from "./directive_generation";
-import { roomPlanning } from "./room_planning";
+import {roomPlanning} from "./room_planning";
 
 export function room_management() {
     for (const room of Object.values(Game.rooms)) {

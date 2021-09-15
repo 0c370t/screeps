@@ -26,13 +26,13 @@ export const {getDirectives, forceRememo} = (() => {
             }
             if (!memo[r.name]) {
                 const allDirectives = Object.values(r.memory.availableDirectives ?? {});
-                memo[r.name] = allDirectives.sort((a, b) => a.priority - b.priority);
+                memo[r.name] = allDirectives.sort((a, b) => b.priority - a.priority);
             }
             return memo[r.name];
         },
         forceRememo: (r: Room) => {
             const allDirectives = Object.values(r.memory.availableDirectives ?? {});
-            memo[r.name] = allDirectives.sort((a, b) => a.priority - b.priority);
+            memo[r.name] = allDirectives.sort((a, b) => b.priority - a.priority);
         },
     };
 })();

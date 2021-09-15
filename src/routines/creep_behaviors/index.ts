@@ -1,4 +1,6 @@
-import {forceRememo, getDirectives, hashDirective, transformAvailableDirective} from "../room_management/directive_generation/directives";
+import {
+    forceRememo, getDirectives, hashDirective, transformAvailableDirective,
+} from "../room_management/directive_generation/directives";
 import {steps, StepStatus} from "./steps";
 
 export function creep_behaviors() {
