@@ -1,11 +1,12 @@
-import type {Directive, DirectiveTemplate} from "./types";
+import {Priority} from "../../../../constants";
+import type {AvailableDirective, DirectiveTemplate} from "./types";
 
 export const CollectEnergyDirective: DirectiveTemplate = {
     roles: ["harvester"],
     steps: ["mine", "deposit"],
 };
 
-export const createCollectEnergyDirective = (source: Id<Source>, container: Id<Structure>): Directive => ({
+export const createCollectEnergyDirective = (source: Id<Source>, container: Id<Structure>, available: number): AvailableDirective => ({
     roles: CollectEnergyDirective.roles,
     steps: [
         {
@@ -17,5 +18,6 @@ export const createCollectEnergyDirective = (source: Id<Source>, container: Id<S
             target: container,
         },
     ],
-    currentStepIndex: 0,
+    available: available,
+    priority: Priority.NORMAL,
 });

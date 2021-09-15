@@ -1,3 +1,4 @@
+import {CreepPathStyle} from "../../../constants";
 import type {StepFunction} from ".";
 import {StepStatus} from ".";
 
@@ -20,7 +21,7 @@ export const build: StepFunction<ConstructionSite> = (creep: Creep, step): StepS
         case OK:
             return StepStatus.INCOMPLETE;
         case ERR_NOT_IN_RANGE:
-            creep.moveTo(target);
+            creep.moveTo(target, {visualizePathStyle: CreepPathStyle});
             return StepStatus.INCOMPLETE;
         case ERR_NOT_ENOUGH_ENERGY:
             return StepStatus.COMPLETE;

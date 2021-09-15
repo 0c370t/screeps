@@ -748,12 +748,404 @@ var runtime = {exports: {}};
 );
 }(runtime));
 
+var cleanMemory = function cleanMemory() {
+  var creepNames = Object.keys(Game.creeps);
+  var toRemove = [];
+  Object.keys(Memory.creeps).forEach(function (creepName) {
+    if (!creepNames.includes(creepName)) {
+      toRemove.push(creepName);
+    }
+  }); // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+
+  toRemove.forEach(function (name) {
+    return delete Memory.creeps[name];
+  });
+};
+
+function cleanup() {
+  if (Game.time % 50 === 0) {
+    cleanMemory();
+  }
+}
+
+var hashDirective = function hashDirective(d) {
+  return "".concat(d.steps.map(function (s) {
+    return "".concat(s.type, "-").concat(s.target);
+  }));
+};
+var addDirectiveToRoom = function addDirectiveToRoom(r, d) {
+  var hash = hashDirective(d);
+
+  if (!Object.keys(r.memory.availableDirectives).includes(hash)) {
+    r.memory.availableDirectives[hash] = d;
+  }
+};
+var transformAvailableDirective = function transformAvailableDirective(d) {
+  return {
+    steps: d.steps,
+    currentStepIndex: 0
+  };
+};
+
+var _ref$1 = function () {
+  var memo = {};
+  var tick = Game.time;
+  return {
+    getDirectives: function getDirectives(r) {
+      var _a;
+
+      if (tick !== Game.time) {
+        memo = {};
+        tick = Game.time;
+      }
+
+      if (!memo[r.name]) {
+        var allDirectives = Object.values((_a = r.memory.availableDirectives) !== null && _a !== void 0 ? _a : {});
+        memo[r.name] = allDirectives.sort(function (a, b) {
+          return a.priority - b.priority;
+        });
+      }
+
+      return memo[r.name];
+    },
+    forceRememo: function forceRememo(r) {
+      var _a;
+
+      var allDirectives = Object.values((_a = r.memory.availableDirectives) !== null && _a !== void 0 ? _a : {});
+      memo[r.name] = allDirectives.sort(function (a, b) {
+        return a.priority - b.priority;
+      });
+    }
+  };
+}(),
+    getDirectives = _ref$1.getDirectives,
+    forceRememo = _ref$1.forceRememo;
+
+var CreepPathStyle = {
+  fill: "transparent",
+  stroke: "#fff",
+  lineStyle: "dashed",
+  strokeWidth: 0.15,
+  opacity: 0.1
+};
+var Priority;
+
+(function (Priority) {
+  Priority[Priority["EXTREME"] = 10] = "EXTREME";
+  Priority[Priority["VERY_HIGH"] = 8] = "VERY_HIGH";
+  Priority[Priority["HIGH"] = 6] = "HIGH";
+  Priority[Priority["NORMAL"] = 5] = "NORMAL";
+  Priority[Priority["LOW"] = 3] = "LOW";
+  Priority[Priority["WHENEVER"] = 1] = "WHENEVER";
+})(Priority || (Priority = {}));
+
+var build = function build(creep, step) {
+  var target = Game.getObjectById(step.target);
+
+  if (target === null || !target.progressTotal) {
+    console.log("Invalid Target!");
+    return StepStatus.ERROR;
+  }
+
+  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+    creep.say("🔨✅");
+    return StepStatus.COMPLETE;
+  }
+
+  var status = creep.build(target);
+
+  switch (status) {
+    case OK:
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_IN_RANGE:
+      creep.moveTo(target, {
+        visualizePathStyle: CreepPathStyle
+      });
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_ENOUGH_ENERGY:
+      return StepStatus.COMPLETE;
+
+    case ERR_INVALID_TARGET:
+      return StepStatus.ERROR;
+
+    default:
+      console.log("Unexpected status code ".concat(status, " found"));
+      return StepStatus.ERROR;
+  }
+};
+
+var collect = function collect(creep, step) {
+  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
+
+  if (target === null || !target.store) {
+    console.log("Invalid Target!");
+    return StepStatus.ERROR;
+  }
+
+  if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+    creep.say("🛻✅");
+    return StepStatus.COMPLETE;
+  }
+
+  var status = creep.withdraw(target, RESOURCE_ENERGY);
+
+  switch (status) {
+    case OK:
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_IN_RANGE:
+      creep.moveTo(target, {
+        visualizePathStyle: CreepPathStyle
+      });
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_ENOUGH_ENERGY:
+      return StepStatus.COMPLETE;
+
+    case ERR_INVALID_TARGET:
+      return StepStatus.ERROR;
+
+    default:
+      console.log("Unexpected status code ".concat(status, " found"));
+      return StepStatus.ERROR;
+  }
+};
+
+var deposit = function deposit(creep, step) {
+  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
+
+  if (target === null || !target.store && target.structureType !== "controller") {
+    console.log("Invalid Target!");
+    return StepStatus.ERROR;
+  }
+
+  if (target.structureType !== "controller") {
+    var store = target.store;
+
+    if (store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
+      creep.say("💳✅");
+      return StepStatus.COMPLETE;
+    }
+  }
+
+  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+    creep.say("💳✅");
+    return StepStatus.COMPLETE;
+  }
+
+  var status = creep.transfer(target, RESOURCE_ENERGY);
+
+  switch (status) {
+    case OK:
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_IN_RANGE:
+      creep.moveTo(target, {
+        visualizePathStyle: CreepPathStyle
+      });
+      return StepStatus.INCOMPLETE;
+
+    case ERR_FULL:
+    case ERR_NOT_ENOUGH_ENERGY:
+      return StepStatus.COMPLETE;
+
+    case ERR_INVALID_TARGET:
+    case ERR_NO_PATH:
+      return StepStatus.ERROR;
+
+    default:
+      console.log("Unexpected status code ".concat(status, " found"));
+      return StepStatus.ERROR;
+  }
+};
+
+var mine = function mine(creep, step) {
+  var target = Game.getObjectById(step.target);
+
+  if (target === null || typeof target.energy !== "number") {
+    console.log("Invalid Target!"); // Abort this directive
+
+    return StepStatus.ERROR;
+  }
+
+  if (creep.store.getFreeCapacity() === 0) {
+    // Creep has filled up
+    creep.say("⛏️✅");
+    return StepStatus.COMPLETE;
+  }
+
+  var status = creep.harvest(target);
+
+  switch (status) {
+    case OK:
+    case ERR_NOT_ENOUGH_ENERGY:
+    case ERR_BUSY:
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_FOUND:
+      return StepStatus.ERROR;
+
+    case ERR_NOT_IN_RANGE:
+      creep.moveTo(target, {
+        visualizePathStyle: CreepPathStyle
+      });
+      return StepStatus.INCOMPLETE;
+
+    default:
+      console.log("Unexpected status code ".concat(status, " found"));
+      return StepStatus.ERROR;
+  }
+};
+
+var repair = function repair(creep, step) {
+  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
+
+  if (target === null || !target.store) {
+    console.log("Invalid Target!");
+    return StepStatus.ERROR;
+  }
+
+  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+    creep.say("🩹✅");
+    return StepStatus.COMPLETE;
+  }
+
+  var status = creep.repair(target);
+
+  switch (status) {
+    case OK:
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_IN_RANGE:
+      creep.moveTo(target, {
+        visualizePathStyle: CreepPathStyle
+      });
+      return StepStatus.INCOMPLETE;
+
+    case ERR_NOT_ENOUGH_ENERGY:
+      return StepStatus.COMPLETE;
+
+    case ERR_INVALID_TARGET:
+      return StepStatus.ERROR;
+
+    default:
+      console.log("Unexpected status code ".concat(status, " found"));
+      return StepStatus.ERROR;
+  }
+};
+
+var steps = {
+  mine: mine,
+  deposit: deposit,
+  build: build,
+  repair: repair,
+  collect: collect
+};
+var StepStatus;
+
+(function (StepStatus) {
+  StepStatus[StepStatus["COMPLETE"] = 1] = "COMPLETE";
+  StepStatus[StepStatus["INCOMPLETE"] = 0] = "INCOMPLETE";
+  StepStatus[StepStatus["ERROR"] = -1] = "ERROR";
+})(StepStatus || (StepStatus = {}));
+
+function creep_behaviors() {
+  var _a;
+
+  var _loop = function _loop() {
+    var creep = _Object$values[_i];
+
+    if (creep.memory.directive) {
+      var directive = creep.memory.directive;
+      var step = directive.steps[directive.currentStepIndex]; // @ts-expect-error Typescript is hard
+
+      var status = steps[step.type](creep, step);
+
+      switch (status) {
+        case StepStatus.COMPLETE:
+          creep.memory.directive.currentStepIndex += 1;
+
+          if (creep.memory.directive.currentStepIndex >= creep.memory.directive.steps.length) {
+            creep.memory.directive = undefined;
+          }
+
+          return "continue";
+
+        case StepStatus.INCOMPLETE:
+          return "continue";
+
+        case StepStatus.ERROR:
+          console.log("Unable to complete directive! ".concat(JSON.stringify(creep.memory.directive)));
+          creep.memory.directive = undefined;
+          return "continue";
+
+        default:
+          return "continue";
+      }
+    } else {
+      var room = creep.room;
+      var directives = getDirectives(room);
+
+      if (directives.length) {
+        var availableDirective = directives.find(function (d) {
+          return d.roles.includes(creep.memory.role);
+        });
+
+        if (availableDirective) {
+          var _directive = transformAvailableDirective(availableDirective);
+
+          var directiveHash = hashDirective(availableDirective);
+
+          if (((_a = room.memory.availableDirectives) === null || _a === void 0 ? void 0 : _a[directiveHash]) === undefined) {
+            console.log("Couldn't find hash in memory; something is screwy");
+            return "continue";
+          }
+
+          creep.memory.directive = _directive;
+          room.memory.availableDirectives[directiveHash].available -= 1;
+
+          if (room.memory.availableDirectives[directiveHash].available === 0) {
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+            delete room.memory.availableDirectives[directiveHash];
+            forceRememo(room);
+          }
+
+          return "continue";
+        }
+      }
+
+      creep.say("No work");
+      return "continue";
+    }
+  };
+
+  for (var _i = 0, _Object$values = Object.values(Game.creeps); _i < _Object$values.length; _i++) {
+    var _ret = _loop();
+
+    if (_ret === "continue") continue;
+  }
+}
+
 function _slicedToArray(arr, i) {
   return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
 }
 
+function _toConsumableArray(arr) {
+  return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread();
+}
+
+function _arrayWithoutHoles(arr) {
+  if (Array.isArray(arr)) return _arrayLikeToArray(arr);
+}
+
 function _arrayWithHoles(arr) {
   if (Array.isArray(arr)) return arr;
+}
+
+function _iterableToArray(iter) {
+  if (typeof Symbol !== "undefined" && iter[Symbol.iterator] != null || iter["@@iterator"] != null) return Array.from(iter);
 }
 
 function _iterableToArrayLimit(arr, i) {
@@ -803,317 +1195,21 @@ function _arrayLikeToArray(arr, len) {
   return arr2;
 }
 
+function _nonIterableSpread() {
+  throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+
 function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
 }
 
-var build = function build(creep, step) {
-  var target = Game.getObjectById(step.target);
-
-  if (target === null || !target.progressTotal) {
-    console.log("Invalid Target!");
-    return StepStatus.ERROR;
-  }
-
-  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-    creep.say("🔨✅");
-    return StepStatus.COMPLETE;
-  }
-
-  var status = creep.build(target);
-
-  switch (status) {
-    case OK:
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_IN_RANGE:
-      creep.moveTo(target);
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_ENOUGH_ENERGY:
-      return StepStatus.COMPLETE;
-
-    case ERR_INVALID_TARGET:
-      return StepStatus.ERROR;
-
-    default:
-      console.log("Unexpected status code ".concat(status, " found"));
-      return StepStatus.ERROR;
-  }
-};
-
-var collect = function collect(creep, step) {
-  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
-
-  if (target === null || !target.store) {
-    console.log("Invalid Target!");
-    return StepStatus.ERROR;
-  }
-
-  if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-    creep.say("🛻✅");
-    return StepStatus.COMPLETE;
-  }
-
-  var status = creep.withdraw(target, RESOURCE_ENERGY);
-
-  switch (status) {
-    case OK:
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_IN_RANGE:
-      creep.moveTo(target);
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_ENOUGH_ENERGY:
-      return StepStatus.COMPLETE;
-
-    case ERR_INVALID_TARGET:
-      return StepStatus.ERROR;
-
-    default:
-      console.log("Unexpected status code ".concat(status, " found"));
-      return StepStatus.ERROR;
-  }
-};
-
-var deposit = function deposit(creep, step) {
-  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
-
-  if (target === null || !target.store) {
-    console.log("Invalid Target!");
-    return StepStatus.ERROR;
-  }
-
-  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-    creep.say("💳✅");
-    return StepStatus.COMPLETE;
-  }
-
-  var status = creep.transfer(target, RESOURCE_ENERGY);
-
-  switch (status) {
-    case OK:
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_IN_RANGE:
-      creep.moveTo(target);
-      return StepStatus.INCOMPLETE;
-
-    case ERR_FULL:
-    case ERR_NOT_ENOUGH_ENERGY:
-      return StepStatus.COMPLETE;
-
-    case ERR_INVALID_TARGET:
-    case ERR_NO_PATH:
-      return StepStatus.ERROR;
-
-    default:
-      console.log("Unexpected status code ".concat(status, " found"));
-      return StepStatus.ERROR;
-  }
-};
-
-var mine = function mine(creep, step) {
-  var target = Game.getObjectById(step.target);
-
-  if (target === null || !target.energy) {
-    console.log("Invalid Target!"); // Abort this directive
-
-    return StepStatus.ERROR;
-  }
-
-  if (creep.store.getFreeCapacity() === 0) {
-    // Creep has filled up
-    creep.say("⛏️✅");
-    return StepStatus.COMPLETE;
-  }
-
-  var status = creep.harvest(target);
-
-  switch (status) {
-    case OK:
-    case ERR_NOT_ENOUGH_ENERGY:
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_FOUND:
-      return StepStatus.ERROR;
-
-    case ERR_NOT_IN_RANGE:
-      creep.moveTo(target);
-      return StepStatus.INCOMPLETE;
-
-    default:
-      console.log("Unexpected status code ".concat(status, " found"));
-      return StepStatus.ERROR;
-  }
-};
-
-var repair = function repair(creep, step) {
-  var target = Game.getObjectById(step.target); // @ts-expect-error Don't trust getObjectById
-
-  if (target === null || !target.store) {
-    console.log("Invalid Target!");
-    return StepStatus.ERROR;
-  }
-
-  if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-    creep.say("🩹✅");
-    return StepStatus.COMPLETE;
-  }
-
-  var status = creep.repair(target);
-
-  switch (status) {
-    case OK:
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_IN_RANGE:
-      creep.moveTo(target);
-      return StepStatus.INCOMPLETE;
-
-    case ERR_NOT_ENOUGH_ENERGY:
-      return StepStatus.COMPLETE;
-
-    case ERR_INVALID_TARGET:
-      return StepStatus.ERROR;
-
-    default:
-      console.log("Unexpected status code ".concat(status, " found"));
-      return StepStatus.ERROR;
-  }
-};
-
-var steps = {
-  mine: mine,
-  deposit: deposit,
-  build: build,
-  repair: repair,
-  collect: collect
-};
-var StepStatus;
-
-(function (StepStatus) {
-  StepStatus[StepStatus["COMPLETE"] = 1] = "COMPLETE";
-  StepStatus[StepStatus["INCOMPLETE"] = 0] = "INCOMPLETE";
-  StepStatus[StepStatus["ERROR"] = -1] = "ERROR";
-})(StepStatus || (StepStatus = {}));
-
-var _marked$1 = [[creep_behaviors, "c2bd0fa31198c4ac9d51a448f3a30140"]].map(function (arr) {
-  return regeneratorRuntime.mark(arr[0], arr[1]);
-});
-function creep_behaviors() {
-  return regeneratorRuntime.wrap(function creep_behaviors$(_locals, _context) {
-    while (1) {
-      switch (_context.prev = _context.next) {
-        case 0:
-
-          _locals._loop = function _loop() {
-            var creep = _locals._Object$values[_locals._i];
-
-            if (creep.memory.directive) {
-              var directive = creep.memory.directive;
-              var step = directive.steps[directive.currentStepIndex]; // @ts-expect-error Typescript is hard
-
-              var status = steps[step.type](creep, step);
-
-              switch (status) {
-                case StepStatus.COMPLETE:
-                  creep.memory.directive.currentStepIndex += 1;
-
-                  if (creep.memory.directive.currentStepIndex >= creep.memory.directive.steps.length) {
-                    creep.memory.directive = undefined;
-                  }
-
-                  return "continue";
-
-                case StepStatus.INCOMPLETE:
-                  return "continue";
-
-                case StepStatus.ERROR:
-                  console.log("Unable to complete directive! ".concat(JSON.stringify(creep.memory.directive)));
-                  creep.memory.directive = undefined;
-                  return "continue";
-
-                default:
-                  return "continue";
-              }
-            } else {
-              var room = creep.room;
-
-              if (room.memory.availableDirectives && Object.values(room.memory.availableDirectives).length) {
-                var directives = Object.entries(room.memory.availableDirectives);
-                var di = directives.find(function (_ref) {
-                  var _ref2 = _slicedToArray(_ref, 2),
-                      d = _ref2[1];
-
-                  return d[0].roles.includes(creep.memory.role);
-                });
-
-                if (di) {
-                  var _directive = room.memory.availableDirectives[di[0]].pop();
-
-                  creep.memory.directive = _directive;
-
-                  if (room.memory.availableDirectives[di[0]].length === 0) {
-                    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-                    delete room.memory.availableDirectives[di[0]];
-                  }
-
-                  return "continue";
-                }
-              }
-
-              creep.say("No work");
-              return "continue";
-            }
-          };
-
-          _locals._i = 0, _locals._Object$values = Object.values(Game.creeps);
-
-        case 3:
-          if (!(_locals._i < _locals._Object$values.length)) {
-            _context.next = 10;
-            break;
-          }
-
-          _locals._ret = _locals._loop();
-
-          if (!(_locals._ret === "continue")) {
-            _context.next = 7;
-            break;
-          }
-
-          return _context.abrupt("continue", 7);
-
-        case 7:
-          _locals._i++;
-          _context.next = 3;
-          break;
-
-        case 10:
-          _context.next = 12;
-          return {};
-
-        case 12:
-          _context.next = 0;
-          break;
-
-        case 14:
-        case "end":
-          return _context.stop();
-      }
-    }
-  }, _marked$1[0], [], null, this, arguments);
-}
-
 var builder = {
-  targetPopulation: 4,
+  targetPopulation: 6,
   bodies: [[WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE], [WORK, WORK, CARRY, CARRY, MOVE, MOVE], [WORK, CARRY, MOVE]]
 };
 
 var harvester = {
-  targetPopulation: 8,
+  targetPopulation: 6,
   bodies: [[WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE], [WORK, WORK, CARRY, CARRY, MOVE, MOVE], [WORK, CARRY, MOVE]]
 };
 
@@ -1123,9 +1219,10 @@ var roles = {
 };
 
 function canSpawnBody(preferredSpawner, b) {
-  return preferredSpawner.spawnCreep(b, "", {
+  var status = preferredSpawner.spawnCreep(b, "someScreepName", {
     dryRun: true
-  }) === OK;
+  });
+  return status === OK;
 }
 
 var census = function census(room) {
@@ -1142,7 +1239,8 @@ var census = function census(room) {
   }, {
     "harvester": 0,
     "builder": 0
-  }); // Use find instead of forEach to let us bail out when we need to
+  });
+  var totalMaxEnergy = room.energyCapacityAvailable; // Use find instead of forEach to let us bail out when we need to
 
   Object.entries(currentPopulation).find(function (_ref) {
     var _ref2 = _slicedToArray(_ref, 2),
@@ -1184,44 +1282,47 @@ var census = function census(room) {
        * If a population is ~70% full, the first and second (which is cheaper) will be allowed
        */
 
-      var availableBodies = role.bodies.reverse().filter(function (a, i) {
-        return ratio > 1 / Math.pow(1.2, i);
+      var theoreticalTarget = role.bodies.find(function (_, i) {
+        var aboveRatio = ratio >= 1 / Math.pow(1.2, i + 1) || i + 1 === role.bodies.length;
+
+        if (aboveRatio) {
+          // Ensure this room can actually afford this creep
+          var cost = _.reduce(function (p, c) {
+            return p + BODYPART_COST[c];
+          }, 0);
+
+          if (cost > totalMaxEnergy) {
+            return false;
+          }
+        }
+
+        return aboveRatio;
       });
-      var spawnable = availableBodies.find(function (b) {
-        return canSpawnBody(preferredSpawner, b);
-      });
-      if (!spawnable) return false;
-      targetBody = spawnable;
+
+      if (!theoreticalTarget || !canSpawnBody(preferredSpawner, theoreticalTarget)) {
+        return false;
+      }
+
+      targetBody = theoreticalTarget;
     }
 
-    preferredSpawner.spawnCreep(targetBody, "".concat(roleName).concat(Game.time), {
+    var status = preferredSpawner.spawnCreep(targetBody, "".concat(roleName).concat(Game.time), {
       memory: memory
     });
-    return true;
+
+    if (status !== OK) {
+      console.log("Attempted and failed to spawn a ".concat(roleName, " with body ").concat(JSON.stringify(targetBody), ", recieved ").concat(status));
+    }
+
+    return status === OK;
   });
-};
-
-var hashDirective = function hashDirective(d) {
-  return "".concat(d.steps.map(function (s) {
-    return "".concat(s.type, "-").concat(s.target);
-  }));
-};
-
-var addDirectiveToRoom = function addDirectiveToRoom(r, d, count) {
-  var hash = hashDirective(d);
-
-  if (!Object.keys(r.memory.availableDirectives).includes(hash)) {
-    r.memory.availableDirectives[hash] = Array(count).fill(d);
-  } else {
-    console.log("Skipping ".concat(hash));
-  }
 };
 
 var CollectEnergyDirective = {
   roles: ["harvester"],
   steps: ["mine", "deposit"]
 };
-var createCollectEnergyDirective = function createCollectEnergyDirective(source, container) {
+var createCollectEnergyDirective = function createCollectEnergyDirective(source, container, available) {
   return {
     roles: CollectEnergyDirective.roles,
     steps: [{
@@ -1231,19 +1332,71 @@ var createCollectEnergyDirective = function createCollectEnergyDirective(source,
       type: "deposit",
       target: container
     }],
-    currentStepIndex: 0
+    available: available,
+    priority: Priority.NORMAL
   };
 };
 
-var containerTypes = ["container", "storage"];
+var containerTypes = ["container", "storage", "extension"];
+
+var _ref = function () {
+  var targetCounts = {};
+  var tick = Game.time;
+
+  var populateMemo = function populateMemo(r) {
+    var _a;
+
+    var sourceRecord = r.find(FIND_SOURCES).reduce(function (p, c) {
+      if (!p[c.id]) p[c.id] = 0;
+      return p;
+    }, {});
+    var directives = (_a = r.memory.availableDirectives) !== null && _a !== void 0 ? _a : {};
+    var result = Object.values(directives).reduce(function (p, c) {
+      c.steps.forEach(function (s) {
+        if (p[s.target]) {
+          p[s.target] += 1;
+        }
+      });
+      return p;
+    }, sourceRecord);
+    return result;
+  };
+
+  return {
+    findBestSource: function findBestSource(r) {
+      if (Game.time > tick + 10) {
+        tick = Game.time;
+        targetCounts = {};
+      }
+
+      if (targetCounts[r.name] === undefined) {
+        targetCounts[r.name] = populateMemo(r);
+      }
+
+      var roomCounts = targetCounts[r.name];
+      var mostAvailable = Math.min.apply(Math, _toConsumableArray(Object.values(targetCounts[r.name])));
+      var id = Object.entries(roomCounts).find(function (_ref2) {
+        var _ref3 = _slicedToArray(_ref2, 2),
+            count = _ref3[1];
+
+        return count === mostAvailable;
+      });
+      if (!id) throw new Error();
+      targetCounts[r.name][id[0]] += 1;
+      return id[0];
+    }
+  };
+}(),
+    findBestSource = _ref.findBestSource;
+
 var directiveGeneration = function directiveGeneration(room) {
-  var sources = room.find(FIND_SOURCES); // Attempt to fill spawn
+  if (!room.memory.availableDirectives) room.memory.availableDirectives = {}; // Attempt to fill spawn
 
   var spawns = room.find(FIND_MY_SPAWNS);
   spawns.forEach(function (s) {
     if (s.store.getFreeCapacity(RESOURCE_ENERGY)) {
-      var directive = createCollectEnergyDirective(sources[0].id, s.id);
-      addDirectiveToRoom(room, directive, 4);
+      var directive = createCollectEnergyDirective(findBestSource(room), s.id, 2);
+      addDirectiveToRoom(room, directive);
     }
   }); // Attempt to fill containers
 
@@ -1255,14 +1408,13 @@ var directiveGeneration = function directiveGeneration(room) {
 
   if (containers.length) {
     containers.forEach(function (c) {
-      var _a;
-
-      if ((_a = c.store) === null || _a === void 0 ? void 0 : _a.getFreeCapacity(RESOURCE_ENERGY)) {
-        var directive = createCollectEnergyDirective(sources[0].id, c.id);
-        addDirectiveToRoom(room, directive, 4);
+      if (c.store.getFreeCapacity(RESOURCE_ENERGY)) {
+        var directive = createCollectEnergyDirective(findBestSource(room), c.id, 2);
+        addDirectiveToRoom(room, directive);
       }
     });
   } else {
+    // If there are no containers, but there are container sites, create a different build job
     var containerSites = room.find(FIND_MY_CONSTRUCTION_SITES, {
       filter: function filter(f) {
         return containerTypes.includes(f.structureType);
@@ -1274,88 +1426,131 @@ var directiveGeneration = function directiveGeneration(room) {
         addDirectiveToRoom(room, {
           roles: ["harvester", "builder"],
           steps: [{
-            target: sources[0].id,
+            target: findBestSource(room),
             type: "mine"
           }, {
             target: cs.id,
             type: "build"
           }],
-          currentStepIndex: 0
-        }, 4);
+          available: 4,
+          priority: Priority.HIGH
+        });
       });
     }
   }
+
+  var collectOrMine = containers.length ? {
+    type: "collect",
+    target: containers[0].id
+  } : {
+    type: "mine",
+    target: findBestSource(room)
+  }; // Attempt to build structures
+
+  var sites = room.find(FIND_MY_CONSTRUCTION_SITES);
+  sites.forEach(function (s) {
+    if (s.progress < s.progressTotal) {
+      var directive = {
+        roles: ["builder"],
+        steps: [collectOrMine, {
+          type: "build",
+          target: s.id
+        }],
+        available: 2,
+        priority: Priority.HIGH
+      };
+      addDirectiveToRoom(room, directive);
+    }
+  });
+  var controller = room.controller;
+
+  if (controller) {
+    var controllerDirective = {
+      roles: ["builder", "harvester"],
+      steps: [collectOrMine, {
+        type: "deposit",
+        target: controller.id
+      }],
+      available: 4,
+      priority: controller.ticksToDowngrade < CONTROLLER_DOWNGRADE[controller.level] / 2 ? Priority.HIGH : Priority.LOW
+    };
+    addDirectiveToRoom(room, controllerDirective);
+  }
 };
 
-var _marked = [[room_management, "16637a0a7f8d46d27b912c59421ec34d"]].map(function (arr) {
-  return regeneratorRuntime.mark(arr[0], arr[1]);
-});
-function room_management() {
-  return regeneratorRuntime.wrap(function room_management$(_locals, _context) {
-    while (1) {
-      switch (_context.prev = _context.next) {
-        case 0:
+var planRoads = function planRoads(room) {
+  var controller = room.controller;
+  var sources = room.find(FIND_SOURCES);
+  var nodes = [];
 
-          for (_locals._i = 0, _locals._Object$values = Object.values(Game.rooms); _locals._i < _locals._Object$values.length; _locals._i++) {
-            _locals.room = _locals._Object$values[_locals._i];
+  if (controller) {
+    nodes.push(controller.pos);
+  }
 
-            if (Game.time % 10 === 0) {
-              census(_locals.room);
-            }
-
-            if (Game.time % 5 === 0) {
-              directiveGeneration(_locals.room);
-            }
-          }
-
-          _context.next = 4;
-          return {};
-
-        case 4:
-          _context.next = 0;
-          break;
-
-        case 6:
-        case "end":
-          return _context.stop();
-      }
+  sources.forEach(function (s) {
+    return nodes.push(s.pos);
+  });
+  var included_structures = ["container", "extension", "spawn"];
+  var structures = room.find(FIND_MY_STRUCTURES, {
+    filter: function filter(s) {
+      return included_structures.includes(s.structureType);
     }
-  }, _marked[0], [], null, this, arguments);
+  });
+  structures.forEach(function (s) {
+    return nodes.push(s.pos);
+  });
+  var roadPositions = new Set();
+  nodes.forEach(function (n1, i) {
+    for (var j = i; j < nodes.length; j++) {
+      var _PathFinder$search = PathFinder.search(n1, {
+        pos: nodes[j],
+        range: 1
+      }),
+          path = _PathFinder$search.path;
+
+      path.forEach(function (p) {
+        return roadPositions.add(p);
+      });
+    }
+  });
+  roadPositions.forEach(function (p) {
+    return p.createConstructionSite(STRUCTURE_ROAD);
+  });
+};
+
+var roomPlanning = function roomPlanning(r) {
+  console.log("Executing Room Planning");
+  planRoads(r);
+};
+
+function room_management() {
+  for (var _i = 0, _Object$values = Object.values(Game.rooms); _i < _Object$values.length; _i++) {
+    var room = _Object$values[_i];
+
+    if (Game.time % 10 === 0) {
+      census(room);
+    }
+
+    if (Game.time % 5 === 0) {
+      directiveGeneration(room);
+    }
+
+    if (Game.time % 100 === 0) {
+      roomPlanning(room);
+    }
+  }
 }
 
 var routines = {
   room_management: room_management,
-  creep_behaviors: creep_behaviors
+  creep_behaviors: creep_behaviors,
+  cleanup: cleanup
 };
 
-function executeThread(title) {
-  var thread;
-
-  if (Memory.threads[title]) {
-    try {
-      thread = regeneratorRuntime.deserializeGenerator(Memory.threads[title]);
-    } finally {
-      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete Memory.threads[title];
-    }
-  } else {
-    thread = routines[title]();
-  }
-
-  var result = thread.next();
-
-  if (!result.done) {
-    Memory.threads[title] = regeneratorRuntime.serializeGenerator(thread);
-  }
-}
-
 function loop() {
-  if (!Memory.threads) Memory.threads = {
-    "room_management": {},
-    "creep_behaviors": {}
-  };
-  executeThread("room_management");
-  executeThread("creep_behaviors");
+  routines.creep_behaviors();
+  routines.room_management();
+  routines.cleanup();
 }
 
 exports.loop = loop;

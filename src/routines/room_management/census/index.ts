@@ -1,8 +1,9 @@
 import type {Role, RoleDeclaration} from "../../creep_behaviors/roles";
 import {roles} from "../../creep_behaviors/roles";
 
-function canSpawnBody(preferredSpawner: StructureSpawn, b: BodyPartConstant[]): unknown {
-    return preferredSpawner.spawnCreep(b, "", {dryRun: true}) === OK;
+function canSpawnBody(preferredSpawner: StructureSpawn, b: BodyPartConstant[]): boolean {
+    const status = preferredSpawner.spawnCreep(b, "someScreepName", {dryRun: true});
+    return status === OK;
 }
 
 export const census = (room: Room) => {
@@ -24,7 +25,9 @@ export const census = (room: Room) => {
         out[creep.memory.role] += 1;
         return out;
     }, {"harvester": 0, "builder": 0});
-    
+
+    const totalMaxEnergy = room.energyCapacityAvailable;
+
     // Use find instead of forEach to let us bail out when we need to
     Object.entries(currentPopulation).find(([roleName, population]: [Role, number]) => {
         // Get the role
@@ -48,7 +51,7 @@ export const census = (room: Room) => {
             targetBody = role.bodies[role.bodies.length - 1];
         } else {
             // Get current population ratio
-            const ratio = population / role.targetPopulation;
+            const ratio = (population / role.targetPopulation);
             /**
              * Find which bodies are allowed for this population
              * Such that [a,b,c]
@@ -59,13 +62,29 @@ export const census = (room: Room) => {
              * In theory, if a population is 85% full; only the first body will be allowed
              * If a population is ~70% full, the first and second (which is cheaper) will be allowed
              */
-            const availableBodies = role.bodies.reverse().filter((a, i) => ratio > 1 / Math.pow(1.2, i));
-            const spawnable = availableBodies.find(b => canSpawnBody(preferredSpawner, b));
-            if (!spawnable) return false;
-            targetBody = spawnable!;
+            
+            const theoreticalTarget = role.bodies.find((_, i) => {
+                const aboveRatio = ratio >= 1 / Math.pow(1.2, i + 1) || i + 1 === role.bodies.length;
+                if (aboveRatio) {
+                    // Ensure this room can actually afford this creep
+                    const cost = _.reduce<number>((p, c) => p + BODYPART_COST[c], 0);
+                    if (cost > totalMaxEnergy) {
+                        return false;
+                    }
+                }
+                return aboveRatio;
+            });
+            
+            if (!theoreticalTarget || !canSpawnBody(preferredSpawner, theoreticalTarget)) {
+                return false;
+            }
+            targetBody = theoreticalTarget;
         }
-        preferredSpawner.spawnCreep(targetBody, `${roleName}${Game.time}`, {memory});
-        return true;
+        const status = preferredSpawner.spawnCreep(targetBody, `${roleName}${Game.time}`, {memory});
+        if (status !== OK) {
+            console.log(`Attempted and failed to spawn a ${roleName} with body ${JSON.stringify(targetBody)}, recieved ${status}`);
+        }
+        return status === OK;
     });
 };
 

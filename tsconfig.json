@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "module": "ES2020",
-    "target": "ES6",
+    "target": "ES2018",
     "lib": ["esnext", "ESNext.AsyncIterable", "ES2015.Generator", "ES2018.AsyncGenerator"],
     "strictNullChecks": true,
     "moduleResolution": "node",
