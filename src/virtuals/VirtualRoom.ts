@@ -30,13 +30,6 @@ export class VirtualRoom {
         return Object.keys(this.room.memory.directives);
     }
 
-    addDirective(d: AvailableDirective) {
-        const serial = d.steps.reduce((p, c) => `${p}|${c.type}->${c.target}`, "");
-        if (!this.directiveHashes.includes(serial)) {
-            this.room.memory.directives![serial] = d;
-        }
-    }
-
     get creepsByRole(): Record<RoleType, VirtualCreep[]> {
         const roomCreeps = this.room.find(FIND_MY_CREEPS);
         return roomCreeps.reduce<Record<RoleType, VirtualCreep[]>>((c, p) => {
@@ -46,8 +39,46 @@ export class VirtualRoom {
             }
             c[p.memory.role].push(new VirtualCreep(p));
             return c;
-            // @ts-expect-error the reduce function will add all needed keys to this record.
+        // @ts-expect-error the reduce function will add all needed keys to this record.
         }, {}) as unknown as Record<RoleType, VirtualCreep[]>;
+    }
+
+    addDirective(d: AvailableDirective) {
+        const serial = d.steps.map((c) => `${c.type}->${c.target}`).join("|");
+        if (!this.directiveHashes.includes(serial)) {
+            this.room.memory.directives![serial] = d;
+        }
+    }
+
+    findBestSource(pos: RoomPosition): Id<Source> | undefined {
+        const allSources = this.sources; // getter for Room.find(FIND_SOURCES)
+        const scores: Record<Id<Source>, number> = {};
+        const taskedSources = this.room.memory.taskedSources ?? {};
+        for(const source of allSources) {
+            let score = 0;
+            if (source.id in taskedSources) {
+                // Weight based on other creeps working on this source
+                score -= taskedSources[source.id].length * 3;
+            }
+            // Weight based on proportion of available energy (0-10)
+            score += Math.ceil((source.energy / source.energyCapacity) * 10);
+            
+            // Weight based on distance to target
+            const pathLength = pos.findPathTo(source).length;
+            // https://www.desmos.com/calculator/9fpwnvbeon
+            const weight = Math.floor( 20 / Math.pow(1.1, pathLength / 2));
+            score += weight;
+            scores[source.id] = score;
+        }
+
+        let bestVal = Number.MIN_SAFE_INTEGER, bestSource: Id<Source> | undefined = undefined;
+        for(const id in scores) {
+            if (scores[id] > bestVal) {
+                bestVal = scores[id];
+                bestSource = id as Id<Source>;
+            }
+        }
+        return bestSource;
     }
 
     runCensus() {
