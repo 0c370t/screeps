@@ -19,4 +19,4 @@ export const colorGradient = [
     "#f3d600",
     "#f3df16",
     "#f2e926",
-]
+];

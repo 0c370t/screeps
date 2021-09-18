@@ -1,6 +1,6 @@
-import { VirtualRoom } from "./virtuals/VirtualRoom";
-import { createDirectives } from "./creeps/directives/create_directives";
-import { findNaturalCenter } from "./utilities/find_natural_room_center";
+import {createDirectives} from "./creeps/directives/create_directives";
+import {findNaturalCenter} from "./utilities/find_natural_room_center";
+import {VirtualRoom} from "./virtuals/VirtualRoom";
 
 export const loop = () => {
     for (const room of Object.values(Game.rooms)) {

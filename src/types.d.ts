@@ -13,6 +13,7 @@ declare global {
     interface RoomMemory {
         taskedSources?: Record<Id<Source>, Array<Id<Creep>>>;
         directives?: Record<string, AvailableDirective>;
+        naturalCenter?: {x: number; y: number;};
     }
 
     type RoomLevel = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;

@@ -289,7 +289,7 @@ module.exports = {
     "semi": "off",                                                             /* ( f) require or disallow semicolons instead of ASI */ // Disabled in favor of typescript-eslint rule below
     "semi-spacing": ["error", {                                                /* ( f) enforce consistent spacing before and after semicolons */
       "before": false,
-      "after": false
+      "after": true
     }],
     "semi-style": ["error", "last"],                                           /* ( f) enforce location of semicolons */
     "sort-keys": "off",                                                        /* (  ) require object keys to be sorted */

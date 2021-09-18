@@ -1,6 +1,7 @@
 import {census} from "../creeps/census";
 import type {AvailableDirective} from "../creeps/directives/types";
 import type {RoleType} from "../creeps/roles";
+import { findNaturalCenter } from "../utilities/find_natural_room_center";
 import {VirtualCreep} from "./VirtualCreep";
 
 export class VirtualRoom {
@@ -43,8 +44,15 @@ export class VirtualRoom {
         }, {}) as unknown as Record<RoleType, VirtualCreep[]>;
     }
 
+    get naturalCenter(): {x: number; y: number;} {
+        if (this.room.memory.naturalCenter) return this.room.memory.naturalCenter;
+        const result = findNaturalCenter(this);
+        this.room.memory.naturalCenter = result;
+        return result;
+    }
+
     addDirective(d: AvailableDirective) {
-        const serial = d.steps.map((c) => `${c.type}->${c.target}`).join("|");
+        const serial = d.steps.map(c => `${c.type}->${c.target}`).join("|");
         if (!this.directiveHashes.includes(serial)) {
             this.room.memory.directives![serial] = d;
         }
@@ -54,7 +62,7 @@ export class VirtualRoom {
         const allSources = this.sources; // getter for Room.find(FIND_SOURCES)
         const scores: Record<Id<Source>, number> = {};
         const taskedSources = this.room.memory.taskedSources ?? {};
-        for(const source of allSources) {
+        for (const source of allSources) {
             let score = 0;
             if (source.id in taskedSources) {
                 // Weight based on other creeps working on this source
@@ -66,13 +74,14 @@ export class VirtualRoom {
             // Weight based on distance to target
             const pathLength = pos.findPathTo(source).length;
             // https://www.desmos.com/calculator/9fpwnvbeon
-            const weight = Math.floor( 20 / Math.pow(1.1, pathLength / 2));
+            const weight = Math.floor(20 / Math.pow(1.1, pathLength / 2));
             score += weight;
             scores[source.id] = score;
         }
 
-        let bestVal = Number.MIN_SAFE_INTEGER, bestSource: Id<Source> | undefined = undefined;
-        for(const id in scores) {
+        let bestSource: Id<Source> | undefined,
+            bestVal = Number.MIN_SAFE_INTEGER;
+        for (const id in scores) {
             if (scores[id] > bestVal) {
                 bestVal = scores[id];
                 bestSource = id as Id<Source>;
