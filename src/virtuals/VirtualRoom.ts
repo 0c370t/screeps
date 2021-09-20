@@ -1,7 +1,7 @@
 import {census} from "../creeps/census";
 import type {AvailableDirective} from "../creeps/directives/types";
 import type {RoleType} from "../creeps/roles";
-import { findNaturalCenter } from "../utilities/find_natural_room_center";
+import {findNaturalCenter} from "../utilities/find_natural_room_center";
 import {VirtualCreep} from "./VirtualCreep";
 
 export class VirtualRoom {
@@ -24,6 +24,10 @@ export class VirtualRoom {
     get directives() {
         if (!this.room.memory.directives) this.room.memory.directives = {};
         return Object.values(this.room.memory.directives);
+    }
+
+    get creeps() {
+        return this.room.find(FIND_MY_CREEPS).map(c => new VirtualCreep(c));
     }
 
     private get directiveHashes() {
@@ -92,5 +96,27 @@ export class VirtualRoom {
 
     runCensus() {
         census(this);
+    }
+
+    flagWorkTarget(c: VirtualCreep, t: Id<unknown>) {
+        if (this.room.memory.taskedSources === undefined) this.room.memory.taskedSources = {};
+        if (this.room.memory.taskedSources[t] === undefined) this.room.memory.taskedSources[t] = [];
+        if (!this.room.memory.taskedSources[t].includes(c.id)) this.room.memory.taskedSources[t].push(c.id);
+    }
+
+    unflagWorkTarget(c: VirtualCreep, t: Id<unknown>) {
+        if (this.room.memory.taskedSources === undefined) this.room.memory.taskedSources = {};
+        if (this.room.memory.taskedSources[t] === undefined) this.room.memory.taskedSources[t] = [];
+        if (!this.room.memory.taskedSources[t].includes(c.id)) {
+            console.log(
+                "Unflagging",
+                this.room.memory.taskedSources[t].length,
+            );
+            this.room.memory.taskedSources[t] = this.room.memory.taskedSources[t].filter(_t => c.id !== _t);
+            console.log(
+                "Unflagged",
+                this.room.memory.taskedSources[t].length,
+            );
+        }
     }
 }

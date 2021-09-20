@@ -36,7 +36,7 @@ export const mine: StepFunction<MiningStep> = (c: VirtualCreep, step: MiningStep
             console.log(`${c.creep.name} | Missing required body part to complete task`);
             return StepStatus.ERROR;
         case ERR_NOT_IN_RANGE: {
-            const movementStatus = c.moveTo(target.pos);
+            const movementStatus = c.moveTo(target.pos, 1);
             if (movementStatus === ERR_NO_PATH) {
                 console.log(`${c.creep.name} | Unable to find a valid path!`);
                 return StepStatus.ERROR;

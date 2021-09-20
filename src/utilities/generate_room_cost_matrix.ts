@@ -24,8 +24,8 @@ export const {generateCostMatrix} = (() => {
             
             const room = Game.rooms[roomName];
             const matrix = new PathFinder.CostMatrix();
-            for (let x = 0;x < 50;x++) {
-                for (let y = 0;y < 50;y++) {
+            for (let x = 0; x < 50; x++) {
+                for (let y = 0; y < 50; y++) {
                     const lookResults = room.lookAt(x, y);
                     let cost = 0,
                         exclude = false;
@@ -43,6 +43,11 @@ export const {generateCostMatrix} = (() => {
                                     exclude = true;
                                     continue;
                                 } else {
+                                    cost -= 10;
+                                    continue;
+                                }
+                            case "constructionSite":
+                                if (result.constructionSite?.structureType === "road") {
                                     cost -= 10;
                                     continue;
                                 }

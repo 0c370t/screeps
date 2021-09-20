@@ -1,26 +1,20 @@
 import type {VirtualCreep} from "../../virtuals/VirtualCreep";
-import type {
-    DepositStep, StepFunction,
-} from "./types";
+import type {BuildStep, StepFunction} from "./types";
 import {StepStatus} from "./types";
 
-export const deposit: StepFunction<DepositStep> = (c: VirtualCreep, step: DepositStep) => {
-    if (c.creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-        // Announce task completion
+export const build: StepFunction<BuildStep> = (c: VirtualCreep, step: BuildStep) => {
+    if (c.creep.store.getUsedCapacity() === 0) {
         c.stepComplete();
-        
         return StepStatus.DONE;
     }
-    
+
     const target = Game.getObjectById(step.target);
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!target || (target.store === undefined && target.structureType !== "controller")) {
-        console.log(`${c.creep.room.name} | Deposit target missing or of wrong type`);
+    if (!target || target.progress === undefined) {
+        console.log(`${c.creep.room.name} | Build target missing or of wrong type`);
         return StepStatus.ERROR;
     }
 
-    const status = c.creep.transfer(target, RESOURCE_ENERGY);
-
+    const status = c.creep.build(target);
     switch (status) {
         case OK:
             return StepStatus.WORKING;
@@ -35,8 +29,6 @@ export const deposit: StepFunction<DepositStep> = (c: VirtualCreep, step: Deposi
             }
             return StepStatus.WORKING;
         }
-        case ERR_FULL:
-            return StepStatus.DONE;
         default:
             return StepStatus.WORKING;
     }
