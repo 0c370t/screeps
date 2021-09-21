@@ -23,6 +23,7 @@ export const {generateCostMatrix} = (() => {
             if (memoized) return memoized;
             
             const room = Game.rooms[roomName];
+            if (!room) return undefined;
             const matrix = new PathFinder.CostMatrix();
             for (let x = 0; x < 50; x++) {
                 for (let y = 0; y < 50; y++) {

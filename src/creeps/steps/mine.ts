@@ -23,7 +23,7 @@ export const mine: StepFunction<MiningStep> = (c: VirtualCreep, step: MiningStep
     const target = Game.getObjectById(step.target);
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!target || target.energyCapacity === undefined) {
-        console.log(`${c.creep.room.name} | Mining target missing or of wrong type`);
+        c.log(`Mining target missing or of wrong type`);
         return StepStatus.ERROR;
     }
 
@@ -33,12 +33,12 @@ export const mine: StepFunction<MiningStep> = (c: VirtualCreep, step: MiningStep
         case OK:
             return StepStatus.WORKING;
         case ERR_NO_BODYPART:
-            console.log(`${c.creep.name} | Missing required body part to complete task`);
+            c.log(`Missing required body part to complete task`);
             return StepStatus.ERROR;
         case ERR_NOT_IN_RANGE: {
             const movementStatus = c.moveTo(target.pos, 1);
             if (movementStatus === ERR_NO_PATH) {
-                console.log(`${c.creep.name} | Unable to find a valid path!`);
+                c.log(`Unable to find a valid path!`);
                 return StepStatus.ERROR;
             }
             return StepStatus.WORKING;

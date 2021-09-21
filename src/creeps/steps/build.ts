@@ -10,7 +10,7 @@ export const build: StepFunction<BuildStep> = (c: VirtualCreep, step: BuildStep)
 
     const target = Game.getObjectById(step.target);
     if (!target || target.progress === undefined) {
-        console.log(`${c.creep.room.name} | Build target missing or of wrong type`);
+        c.log(`Build target missing or of wrong type`);
         return StepStatus.ERROR;
     }
 
@@ -19,12 +19,12 @@ export const build: StepFunction<BuildStep> = (c: VirtualCreep, step: BuildStep)
         case OK:
             return StepStatus.WORKING;
         case ERR_NO_BODYPART:
-            console.log(`${c.creep.name} | Missing required body part to complete task`);
+            c.log(`Missing required body part to complete task`);
             return StepStatus.ERROR;
         case ERR_NOT_IN_RANGE: {
             const movementStatus = c.moveTo(target.pos);
             if (movementStatus === ERR_NO_PATH) {
-                console.log(`${c.creep.name} | Unable to find a valid path!`);
+                c.log(`Unable to find a valid path!`);
                 return StepStatus.ERROR;
             }
             return StepStatus.WORKING;

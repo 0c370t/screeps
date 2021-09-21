@@ -10,9 +10,7 @@ export const RoleHelper = {
         const availableEnergy = room.availableEnergy;
         const body = role.defaultBody;
         let i = 0;
-        console.log(this.getBodyCost(body), availableEnergy, JSON.stringify(body), role.maxPartLookup[room.level]);
-        while (this.getBodyCost(body) < availableEnergy && body.length < role.maxPartLookup[room.level]) {
-            console.log("boop");
+        while (this.getBodyCost(body) < availableEnergy) {
             body.push(role.extraPart[i++ % role.extraPart.length]);
         }
         return body;

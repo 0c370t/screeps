@@ -1,8 +1,18 @@
+import {Priority} from "../../constants";
 import type {VirtualRoom} from "../../virtuals/VirtualRoom";
 import type {AvailableDirective} from "./types";
 
+const containerPriorityLookup: PartialRecord<StructureConstant, Priority> = {
+    extension: Priority.HIGH,
+};
+
+const structurePriorityLookup: PartialRecord<StructureConstant, Priority> = {
+    constructedWall: Priority.LOW,
+    extension: Priority.HIGH,
+};
+
 export const createDirectives = (room: VirtualRoom) => {
-    console.log(`${room.name} | Creating Directives`);
+    room.log(`Creating Directives`);
     const controller = room.room.controller;
 
     const containers = room.room.find(FIND_MY_STRUCTURES, {
@@ -26,6 +36,7 @@ export const createDirectives = (room: VirtualRoom) => {
                 ],
                 roles: ["laborer"],
                 availableCount: 2,
+                priority: containerPriorityLookup[c.structureType] ?? Priority.NORMAL,
             };
             room.addDirective(storeDirective);
     
@@ -50,6 +61,7 @@ export const createDirectives = (room: VirtualRoom) => {
                 ],
                 roles: ["laborer"],
                 availableCount: 4,
+                priority: Priority.HIGH,
             };
             room.addDirective(spawnDirective);
         }
@@ -72,6 +84,7 @@ export const createDirectives = (room: VirtualRoom) => {
             ],
             availableCount: 2,
             roles: ["laborer"],
+            priority: structurePriorityLookup[s.structureType] ?? Priority.NORMAL,
         };
         room.addDirective(siteDirective);
     });
@@ -93,6 +106,7 @@ export const createDirectives = (room: VirtualRoom) => {
                 ],
                 roles: ["laborer"],
                 availableCount: 4,
+                priority: controller.ticksToDowngrade > CONTROLLER_DOWNGRADE[controller.level] / 2 ? Priority.LOW : Priority.HIGH,
             };
             room.addDirective(controllerDirective);
         }

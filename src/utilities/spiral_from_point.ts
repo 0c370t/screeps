@@ -3,8 +3,6 @@ type PointLike = RoomPosition | {x: number; y: number;};
 export const spiralFromPoint = (point: PointLike, condition: (p: PointLike) => boolean): {x: number; y: number;} => {
     let velocity = [0, -1];
     const delta = {x: 0, y: 0};
-
-    // console.log(condition({x: delta.x + point.x, y: delta.y + point.y}));
     
     while (!condition({x: delta.x + point.x, y: delta.y + point.y})) {
         if (delta.x === delta.y

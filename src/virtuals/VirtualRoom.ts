@@ -1,10 +1,14 @@
 import {census} from "../creeps/census";
+import {serializeDirective} from "../creeps/directives";
 import type {AvailableDirective} from "../creeps/directives/types";
 import type {RoleType} from "../creeps/roles";
 import {findNaturalCenter} from "../utilities/find_natural_room_center";
-import {VirtualCreep} from "./VirtualCreep";
+import type {VirtualCreep} from "./VirtualCreep";
+import {VirtualManager} from "./VirtualManager";
 
 export class VirtualRoom {
+    private _sortedDirectives: [number, AvailableDirective[]] = [-1, [] ];
+
     constructor(public room: Room) {}
 
     get sources() { return this.room.find(FIND_SOURCES) }
@@ -21,13 +25,19 @@ export class VirtualRoom {
 
     get name() { return this.room.name }
 
+
     get directives() {
         if (!this.room.memory.directives) this.room.memory.directives = {};
-        return Object.values(this.room.memory.directives);
+        if (this._sortedDirectives[0] !== Game.time) {
+            const rawDirs = Object.values(this.room.memory.directives);
+            this._sortedDirectives = [Game.time, rawDirs.sort((a, b) => b.priority - a.priority)];
+            this.log(`Sorting directives`);
+        }
+        return this._sortedDirectives[1];
     }
 
     get creeps() {
-        return this.room.find(FIND_MY_CREEPS).map(c => new VirtualCreep(c));
+        return this.room.find(FIND_MY_CREEPS).map(c => VirtualManager.getVirtualCreep(c));
     }
 
     private get directiveHashes() {
@@ -42,7 +52,7 @@ export class VirtualRoom {
             if (!c[p.memory.role]) {
                 c[p.memory.role] = [];
             }
-            c[p.memory.role].push(new VirtualCreep(p));
+            c[p.memory.role].push(VirtualManager.getVirtualCreep(p));
             return c;
         // @ts-expect-error the reduce function will add all needed keys to this record.
         }, {}) as unknown as Record<RoleType, VirtualCreep[]>;
@@ -56,8 +66,10 @@ export class VirtualRoom {
     }
 
     addDirective(d: AvailableDirective) {
-        const serial = d.steps.map(c => `${c.type}->${c.target}`).join("|");
+        const serial = serializeDirective(d);
         if (!this.directiveHashes.includes(serial)) {
+            this.room.memory.directives![serial] = d;
+        } else if (this.room.memory.directives![serial].priority !== d.priority) {
             this.room.memory.directives![serial] = d;
         }
     }
@@ -107,16 +119,15 @@ export class VirtualRoom {
     unflagWorkTarget(c: VirtualCreep, t: Id<unknown>) {
         if (this.room.memory.taskedSources === undefined) this.room.memory.taskedSources = {};
         if (this.room.memory.taskedSources[t] === undefined) this.room.memory.taskedSources[t] = [];
-        if (!this.room.memory.taskedSources[t].includes(c.id)) {
-            console.log(
-                "Unflagging",
-                this.room.memory.taskedSources[t].length,
-            );
-            this.room.memory.taskedSources[t] = this.room.memory.taskedSources[t].filter(_t => c.id !== _t);
-            console.log(
-                "Unflagged",
-                this.room.memory.taskedSources[t].length,
-            );
+        if (this.room.memory.taskedSources[t].includes(c.id)) {
+            this.room.memory.taskedSources[t] = this.room.memory.taskedSources[t].filter(ts => c.id !== ts);
         }
+        // Do a sanity check
+        const liveCreeps = c.room.creeps.map(_c => _c.id);
+        this.room.memory.taskedSources[t] = this.room.memory.taskedSources[t].filter(ts => liveCreeps.includes(ts));
+    }
+
+    log(...args: Parameters<typeof console.log>) {
+        console.log(`${this.name} | `, ...args);
     }
 }

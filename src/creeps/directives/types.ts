@@ -1,3 +1,4 @@
+import type {Priority} from "../../constants";
 import type {RoleType} from "../roles";
 import type {Step} from "../steps/types";
 
@@ -18,6 +19,11 @@ export interface AvailableDirective extends DirectiveCore {
      * Roles that are allowed to complete this directive
      */
     roles: RoleType[];
+
+    /**
+     * Determines which order the directive should be picked up in
+     */
+    priority: Priority;
 }
 
 export interface AcceptedDirective extends DirectiveCore {
