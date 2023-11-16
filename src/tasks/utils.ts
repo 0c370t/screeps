@@ -11,7 +11,7 @@ export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
 };
 
 export const findTask = (creep: Creep) => {
-    console.log(Object.entries(creep.room.memory.tasks))
+    console.log(Object.entries(creep.room.memory.tasks).filter(([k,v]) => v.length > 0))
     // TODO: Future check that creep has correct body parts
     const task = Object.entries(creep.room.memory.tasks).find(([k,v]) => {
         v.indexOf(null) >= 0
