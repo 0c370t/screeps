@@ -5,7 +5,8 @@ export const depositTask = (creep: Creep, target: StructureStorage | StructureCo
     
     const r = creep.transfer(
         target,
-        RESOURCE_ENERGY
+        RESOURCE_ENERGY,
+        creep.store.getUsedCapacity()
     )
     switch (r) {
         case ERR_NOT_IN_RANGE:
