@@ -20,8 +20,10 @@ export const loop = () => {
       if (creep.memory.task) {
         const target = Game.getObjectById(creep.memory.task);
         if (target instanceof Source) {
+          console.log(`${creep.name} mining energy`)
           sourceTask(creep, target);
         } else if (target instanceof StructureStorage || target instanceof StructureController) {
+          console.log(`${creep.name} depositing`)
           depositTask(creep, target);
         }
       }
