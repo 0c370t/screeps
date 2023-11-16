@@ -19,6 +19,6 @@ export const depositTask = (creep: Creep, target: StructureStorage | StructureCo
             }
             break;
         default:
-            
+            creep.speak("Unhandled deposit status", r)
     }
 }
