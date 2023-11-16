@@ -1,4 +1,4 @@
-import { PATH_STYLE } from "../constants";
+import { DEFAULT_MOVE_OPTS } from "../constants";
 import { finishTask } from "./utils";
 
 export const controllerTask = (creep: Creep, target: StructureController) => {
@@ -9,7 +9,7 @@ export const controllerTask = (creep: Creep, target: StructureController) => {
     )
     switch (r) {
         case ERR_NOT_IN_RANGE:
-            creep.moveTo(target, { visualizePathStyle: PATH_STYLE });
+            creep.moveTo(target, DEFAULT_MOVE_OPTS);
             break;
         case OK:
             if (creep.store.getUsedCapacity() === 0) {
