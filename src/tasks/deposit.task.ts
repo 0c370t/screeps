@@ -10,7 +10,7 @@ export const depositTask = (creep: Creep, target: StructureStorage | StructureCo
     )
     switch (r) {
         case ERR_NOT_IN_RANGE:
-            creep.moveTo(target, DEFAULT_MOVE_OPTS);
+            creep.goto(target);
             break;
         case OK:
         case ERR_NOT_ENOUGH_ENERGY:

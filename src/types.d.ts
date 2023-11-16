@@ -16,4 +16,5 @@ declare interface RoomMemory {
 
 declare interface Creep {
     speak: (...args: Parameters<typeof console.log>) => void
+    goto: Creep["moveTo"]
 }

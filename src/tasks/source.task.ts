@@ -5,13 +5,7 @@ export const sourceTask = (creep: Creep, target: Source) => {
   const r = creep.harvest(target);
   switch (r) {
     case ERR_NOT_IN_RANGE:
-      const moveResult = creep.moveTo(target, DEFAULT_MOVE_OPTS);
-      // They might be blocked on their "remembered" path; we should tone that way down to try and get them unstuck
-      if (moveResult !== OK)
-        creep.moveTo(
-          target,
-          Object.assign({}, DEFAULT_MOVE_OPTS, { reusePath: 2 })
-        );
+      creep.goto(target);
       break;
     case OK:
       // No free space; full
