@@ -34,6 +34,25 @@ export const spawn = (r: Room | Room["name"]) => {
       body = ["work", "carry", "move", "move"];
       role = "basic-worker";
     }
+  } else {
+    /*
+      BODYPART_COST: {
+        "move": 50,
+        "work": 100,
+        "attack": 80,
+        "carry": 50,
+        "heal": 250,
+        "ranged_attack": 150,
+        "tough": 10,
+        "claim": 600
+    },
+    */
+    switch (true) {
+      case r.energyAvailable >= 500:
+        body = ["work", "work", "carry", "carry", "move", "move", "move", "move"]
+        role = "mid-worker"
+        break;
+    }
   }
 
   if (body.length) {
