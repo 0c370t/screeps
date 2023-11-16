@@ -9,3 +9,19 @@ export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
 
   creep.memory.task = nextId
 };
+
+export const findTask = (creep: Creep) => {
+    // TODO: Future check that creep has correct body parts
+    const task = Object.entries(creep.room.memory.tasks).find(([k,v]) => {
+        v.filter(Boolean).length > 0
+    });
+    if (!task) {
+        console.log(`${creep.name} is bored`)
+        return;
+    }
+
+    // Replace first null with this creep
+    const idx = task[1].indexOf(null)
+    task[1][idx] = creep.name
+    creep.memory.task = task[0] as TaskId
+}

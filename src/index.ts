@@ -2,6 +2,7 @@ import { creeps } from "./globals";
 import { manageCreeps, spawn } from "./manageCreeps";
 import { controllerTask } from "./tasks/controller.task";
 import { sourceTask } from "./tasks/source.task";
+import { findTask } from "./tasks/utils";
 export const loop = () => {
   manageCreeps();
   for (const roomName in Game.rooms) {
@@ -15,6 +16,7 @@ export const loop = () => {
     const roomCreeps = creeps[roomName] ?? [];
 
     for (const creep of roomCreeps) {
+      if (!creep.memory.task) findTask(creep)
       if (creep.memory.task) {
         const target = Game.getObjectById(creep.memory.task);
         if (target instanceof Source) {
