@@ -18,17 +18,30 @@ export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
 
 export const findTask = (creep: Creep) => {
   // TODO: Future check that creep has correct body parts
-  const task = Object.entries(creep.room.memory.tasks).find(
-    ([k, v]) => v.indexOf(null) >= 0
-  );
 
-  if (!task) {
+  
+  const task = Object.entries(creep.room.memory.tasks).reduce((a, [targetId, assignees]) => {
+    if (assignees.indexOf(null) === -1) return a;
+    const target = Game.getObjectById(targetId as TaskId)
+    if (!target) return a;
+    const pf = PathFinder.search(creep.pos, target.pos)  
+    if (pf.cost < a.distance) {
+        return { targetId, distance: pf.cost }
+    } else {
+        return a;
+    }
+  }, { targetId: null, distance: Number.MAX_SAFE_INTEGER })
+
+
+  
+
+  if (!task.targetId) {
     creep.speak("Bored");
     return;
   }
 
   // Replace first null with this creep
-  const idx = task[1].indexOf(null);
-  task[1][idx] = creep.name;
-  creep.memory.task = task[0] as TaskId;
+  const idx = creep.room.memory.tasks[task.targetId].indexOf(null)
+  creep.room.memory.tasks[task.targetId][idx] = creep.name;
+  creep.memory.task = task.targetId as TaskId;
 };
