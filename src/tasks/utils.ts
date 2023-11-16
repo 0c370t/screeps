@@ -17,6 +17,7 @@ export const findTask = (creep: Creep) => {
         v.indexOf(null) >= 0
     });
 
+    console.log(task)
     
     if (!task) {
         console.log(`${creep.name} is bored`)
