@@ -42,7 +42,7 @@ export const spawn = (r: Room | Room["name"]) => {
       filter: (s) => !Boolean(s.spawning),
     });
     if (spawns.length) {
-      spawns
+      const spawnStatus = spawns
         .pop()
         ?.spawnCreep(
           body,
@@ -54,6 +54,11 @@ export const spawn = (r: Room | Room["name"]) => {
             },
           }
         );
+        if (spawnStatus === OK) {
+          console.log("Spawned a screep!")
+        } else {
+          console.log("Failed to spawn a screep!", spawnStatus)
+        }
     }
   }
 };
