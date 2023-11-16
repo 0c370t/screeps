@@ -12,6 +12,7 @@ export default defineConfig({
       fileName: 'my-lib',
       formats: ["cjs"],
     },
+    target: ["es6"],
     sourcemap: true
   },
   
