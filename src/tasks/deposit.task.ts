@@ -12,6 +12,7 @@ export const depositTask = (creep: Creep, target: StructureStorage | StructureCo
             creep.moveTo(target, DEFAULT_MOVE_OPTS);
             break;
         case OK:
+        case ERR_NOT_ENOUGH_ENERGY:
             creep.speak(`Depositing (${creep.store.getUsedCapacity()} / ${creep.store.getCapacity()})`)
             if (creep.store.getUsedCapacity() === 0) {
                 // All done
