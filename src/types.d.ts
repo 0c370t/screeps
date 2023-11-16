@@ -2,6 +2,7 @@
 /// <reference types="screeps" />
 
 declare interface CreepMemory {
-    room: Room["name"]
+    room: Room["name"];
+    role: string;
 }
 declare interface RoomMemory {}
