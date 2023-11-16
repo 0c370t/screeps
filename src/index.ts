@@ -25,6 +25,8 @@ export const loop = () => {
         } else if (target instanceof StructureStorage || target instanceof StructureController) {
           console.log(`${creep.name} depositing`)
           depositTask(creep, target);
+        } else {
+          console.log(`${creep.name} is broken... ${target}`)
         }
       }
     }
