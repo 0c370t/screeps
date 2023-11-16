@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "module": "ES2015",
-    "lib": ["ESNEXT"],
-    "strictNullChecks": true,
-    "moduleResolution": "node",
-  }
-}
