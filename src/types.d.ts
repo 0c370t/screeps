@@ -1,7 +1,7 @@
 // eslint-disable-next-line spaced-comment
 /// <reference types="screeps" />
 
-declare type TaskId = Id<Resource | Source | StructureController>
+declare type TaskId = Id<Resource | Source | StructureController | StructureSpawn>
 
 declare interface CreepMemory {
     room: Room["name"];

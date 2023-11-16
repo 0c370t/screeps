@@ -1,7 +1,7 @@
 import { DEFAULT_MOVE_OPTS } from "../constants";
 import { finishTask } from "./utils";
 
-export const controllerTask = (creep: Creep, target: StructureController) => {
+export const depositTask = (creep: Creep, target: StructureStorage | StructureController) => {
     
     const r = creep.transfer(
         target,

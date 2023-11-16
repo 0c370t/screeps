@@ -12,7 +12,13 @@ export const sourceTask = (creep: Creep, target: Source) => {
         // Creep is full
         if (!creep.room.controller)
           throw new Error("Creep is full in a room without a controller");
-        finishTask(creep, creep.room.controller.id)
+
+        const spawns = creep.room.find(FIND_MY_SPAWNS, { filter: (s) => (s.store.getFreeCapacity(RESOURCE_ENERGY)) > 0 })
+        if (spawns.length) {
+            finishTask(creep, spawns[0].id)
+        } else {
+            finishTask(creep, creep.room.controller.id)
+        }
       }
       break;
   }

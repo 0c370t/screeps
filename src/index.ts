@@ -1,6 +1,6 @@
 import { creeps } from "./globals";
 import { manageCreeps, spawn } from "./manageCreeps";
-import { controllerTask } from "./tasks/controller.task";
+import { depositTask } from "./tasks/deposit.task";
 import { sourceTask } from "./tasks/source.task";
 import { findTask } from "./tasks/utils";
 export const loop = () => {
@@ -21,8 +21,8 @@ export const loop = () => {
         const target = Game.getObjectById(creep.memory.task);
         if (target instanceof Source) {
           sourceTask(creep, target);
-        } else if (target instanceof StructureController) {
-          controllerTask(creep, target);
+        } else if (target instanceof StructureStorage || target instanceof StructureController) {
+          depositTask(creep, target);
         }
       }
     }
