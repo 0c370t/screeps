@@ -33,8 +33,6 @@ export const findTask = (creep: Creep) => {
   }, { targetId: null, distance: Number.MAX_SAFE_INTEGER })
 
 
-  
-
   if (!task.targetId) {
     creep.speak("Bored");
     return;

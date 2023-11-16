@@ -21,5 +21,9 @@ export const sourceTask = (creep: Creep, target: Source) => {
         }
       }
       break;
+      default:
+        creep.speak("Unhandled mining case", r)
+        break;
   }
+  
 };
