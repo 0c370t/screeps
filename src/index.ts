@@ -1,3 +1,5 @@
+import "./prototypes/Creep"
+
 import { creeps } from "./globals";
 import { manageCreeps, spawn } from "./manageCreeps";
 import { depositTask } from "./tasks/deposit.task";
