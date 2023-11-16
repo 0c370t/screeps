@@ -1,5 +1,5 @@
 export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
-  console.log(`${creep.name} finished their task`);
+  creep.speak("Work Complete")
   if (creep.memory.task) {
     const creepTaskIdx = creep.room.memory.tasks[creep.memory.task].indexOf(
       creep.name
@@ -18,7 +18,7 @@ export const findTask = (creep: Creep) => {
   );
 
   if (!task) {
-    console.log(`${creep.name} is bored`);
+    creep.speak("Bored")
     return;
   }
 

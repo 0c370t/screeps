@@ -13,3 +13,7 @@ declare interface RoomMemory {
     // Record of "thing" to "creep"
     tasks: Record<TaskId, (Creep["name"] | null)[]>
 }
+
+declare interface Creep {
+    speak: (...args: Parameters<typeof console.log>) => void
+}

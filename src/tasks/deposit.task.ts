@@ -12,11 +12,13 @@ export const depositTask = (creep: Creep, target: StructureStorage | StructureCo
             creep.moveTo(target, DEFAULT_MOVE_OPTS);
             break;
         case OK:
-            console.log(`${creep.name} | Depositing (${creep.store.getUsedCapacity()} / ${creep.store.getCapacity()})`)
+            creep.speak(`Depositing (${creep.store.getUsedCapacity()} / ${creep.store.getCapacity()})`)
             if (creep.store.getUsedCapacity() === 0) {
                 // All done
                 finishTask(creep)
             }
             break;
+        default:
+            
     }
 }
