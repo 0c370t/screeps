@@ -25,7 +25,7 @@ export const manageCreeps = () => {
 export const spawn = (r: Room | Room["name"]) => {
   if (typeof r === "string") r = Game.rooms[r];
 
-  const roomCreeps = creeps[r.name];
+  const roomCreeps = creeps[r.name] ?? [];
   let body: BodyPartConstant[] = [];
   let role: string = "";
   if (roomCreeps.length < 3) {
