@@ -7,25 +7,29 @@ export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
     // TODO: When should the task be removed from the room
   }
 
-  creep.memory.task = nextId
+  creep.memory.task = nextId;
 };
 
 export const findTask = (creep: Creep) => {
-    console.log(Object.entries(creep.room.memory.tasks).map(([k,v]) => v.indexOf(null) >= 0))
-    // TODO: Future check that creep has correct body parts
-    const task = Object.entries(creep.room.memory.tasks).find(([k,v]) => {
-        v.indexOf(null) >= 0
-    });
+  console.log(
+    Object.entries(creep.room.memory.tasks).map(
+      ([k, v]) => v.indexOf(null) >= 0
+    )
+  );
+  // TODO: Future check that creep has correct body parts
+  const task = Object.entries(creep.room.memory.tasks).find(
+    ([k, v]) => v.indexOf(null) >= 0
+  );
 
-    console.log(task)
-    
-    if (!task) {
-        console.log(`${creep.name} is bored`)
-        return;
-    }
+  console.log(task);
 
-    // Replace first null with this creep
-    const idx = task[1].indexOf(null)
-    task[1][idx] = creep.name
-    creep.memory.task = task[0] as TaskId
-}
+  if (!task) {
+    console.log(`${creep.name} is bored`);
+    return;
+  }
+
+  // Replace first null with this creep
+  const idx = task[1].indexOf(null);
+  task[1][idx] = creep.name;
+  creep.memory.task = task[0] as TaskId;
+};
