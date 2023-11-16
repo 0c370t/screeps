@@ -11,7 +11,6 @@ export default defineConfig({
       // the proper extensions will be added
       fileName: 'my-lib',
       formats: ["cjs"],
-
     },
     sourcemap: true
   },
