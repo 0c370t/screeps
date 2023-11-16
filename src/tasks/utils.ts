@@ -1,4 +1,5 @@
 export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
+  console.log(`${creep.name} finished their task`);
   if (creep.memory.task) {
     const creepTaskIdx = creep.room.memory.tasks[creep.memory.task].indexOf(
       creep.name
