@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "esnext",
     "lib": ["ESNext", "DOM"],
-    "target": "ES2015",
+    "target": "ES5",
     "moduleResolution": "node",
     "strictNullChecks": true
   }
