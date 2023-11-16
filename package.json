@@ -1,0 +1,17 @@
+{
+  "name": "screeps",
+  "module": "src/index.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/screeps": "^3.3.6"
+  },
+  "scripts": {
+    "build": "bun build src/index.ts --target node --outfile main.js --minify"
+  }
+}
