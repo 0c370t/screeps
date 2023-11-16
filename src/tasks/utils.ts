@@ -13,7 +13,7 @@ export const finishTask = (creep: Creep, nextId?: CreepMemory["task"]) => {
 export const findTask = (creep: Creep) => {
     // TODO: Future check that creep has correct body parts
     const task = Object.entries(creep.room.memory.tasks).find(([k,v]) => {
-        v.filter(Boolean).length > 0
+        v.filter(t => t === null).length > 0
     });
     if (!task) {
         console.log(`${creep.name} is bored`)
